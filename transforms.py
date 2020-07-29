@@ -1,11 +1,12 @@
 import scipy
 import numpy as np
+import librosa
+import albumentations
 from albumentations.core.transforms_interface import DualTransform, BasicTransform
-
+import random
 
 def compute_stft(audio, window_size, hop_size, log=True, eps=1e-4):
-    f, t, s = scipy.signal.stft(
-        audio, nperseg=window_size, noverlap=hop_size)
+    f, t, s = scipy.signal.stft(audio, nperseg=window_size, noverlap=hop_size)
 
     s = np.abs(s)
 
@@ -21,7 +22,7 @@ class AudioTransform(BasicTransform):
     @property
     def targets(self):
         return {"data": self.apply}
-    
+
     def update_params(self, params, **kwargs):
         if hasattr(self, "interpolation"):
             params["interpolation"] = self.interpolation
@@ -29,13 +30,15 @@ class AudioTransform(BasicTransform):
             params["fill_value"] = self.fill_value
         return params
 
+
 class NoiseInjection(AudioTransform):
     """It simply add some random value into data by using numpy"""
+
     def __init__(self, noise_levels=(0, 0.5), always_apply=False, p=0.5):
         super(NoiseInjection, self).__init__(always_apply, p)
 
         self.noise_levels = noise_levels
-    
+
     def apply(self, data, **params):
         sound, sr = data
         noise_level = np.random.uniform(*self.noise_levels)
@@ -46,17 +49,19 @@ class NoiseInjection(AudioTransform):
 
         return augmented_sound, sr
 
+
 class ShiftingTime(AudioTransform):
     """Shifting time axis"""
+
     def __init__(self, always_apply=False, p=0.5):
         super(ShiftingTime, self).__init__(always_apply, p)
-    
+
     def apply(self, data, **params):
         sound, sr = data
 
-        shift_max = np.random.randint(1,len(sound))
+        shift_max = np.random.randint(1, len(sound))
         shift = np.random.randint(int(sr * shift_max))
-        direction = np.random.randint(0,2)
+        direction = np.random.randint(0, 2)
         if direction == 1:
             shift = -shift
 
@@ -69,11 +74,11 @@ class ShiftingTime(AudioTransform):
 
         return augmented_sound, sr
 
+
 class PitchShift(AudioTransform):
-    
     def __init__(self, always_apply=False, p=0.5):
         super(PitchShift, self).__init__(always_apply, p)
-    
+
     def apply(self, data, **params):
         sound, sr = data
 
@@ -82,11 +87,11 @@ class PitchShift(AudioTransform):
 
         return augmented_sound, sr
 
+
 class TimeStretch(AudioTransform):
-    
     def __init__(self, always_apply=False, p=0.5):
         super(TimeStretch, self).__init__(always_apply, p)
-    
+
     def apply(self, data, **params):
         sound, sr = data
 
@@ -95,13 +100,13 @@ class TimeStretch(AudioTransform):
 
         return augmented_sound, sr
 
+
 class RandomAudio(AudioTransform):
-    
-    def __init__(self,  seconds=5, always_apply=False, p=0.5):
+    def __init__(self, seconds=5, always_apply=False, p=0.5):
         super(RandomAudio, self).__init__(always_apply, p)
 
         self.seconds = seconds
-    
+
     def apply(self, data, **params):
         sound, sr = data
 
@@ -119,13 +124,13 @@ class RandomAudio(AudioTransform):
 
         return trim_sound, sr
 
-class MelSpectrogram(AudioTransform):
 
+class MelSpectrogram(AudioTransform):
     def __init__(self, parameters, always_apply=False, p=0.5):
         super(MelSpectrogram, self).__init__(always_apply, p)
 
         self.parameters = parameters
-    
+
     def apply(self, data, **params):
         sound, sr = data
 
@@ -135,60 +140,65 @@ class MelSpectrogram(AudioTransform):
 
         return melspec, sr
 
+
 class SpecAugment(AudioTransform):
-    
-    def __init__(self, num_mask=2, freq_masking=0.15, time_masking=0.20, always_apply=False, p=0.5):
+    def __init__(
+        self,
+        num_mask=2,
+        freq_masking=0.15,
+        time_masking=0.20,
+        always_apply=False,
+        p=0.5,
+    ):
         super(SpecAugment, self).__init__(always_apply, p)
 
         self.num_mask = num_mask
         self.freq_masking = freq_masking
         self.time_masking = time_masking
-    
+
     def apply(self, data, **params):
         melspec, sr = data
 
-        spec_aug = self.spec_augment(melspec, 
-                                     self.num_mask,
-                                     self.freq_masking,
-                                     self.time_masking,
-                                     melspec.min())
-        
-
+        spec_aug = self.spec_augment(
+            melspec, self.num_mask, self.freq_masking, self.time_masking, melspec.min()
+        )
 
         return spec_aug, sr
-    
+
     # Source: https://www.kaggle.com/davids1992/specaugment-quick-implementation
-    def spec_augment(self, 
-                    spec: np.ndarray,
-                    num_mask=2,
-                    freq_masking=0.15,
-                    time_masking=0.20,
-                    value=0):
+    def spec_augment(
+        self,
+        spec: np.ndarray,
+        num_mask=2,
+        freq_masking=0.15,
+        time_masking=0.20,
+        value=0,
+    ):
         spec = spec.copy()
         num_mask = random.randint(1, num_mask)
         for i in range(num_mask):
-            all_freqs_num, all_frames_num  = spec.shape
+            all_freqs_num, all_frames_num = spec.shape
             freq_percentage = random.uniform(0.0, freq_masking)
 
             num_freqs_to_mask = int(freq_percentage * all_freqs_num)
             f0 = np.random.uniform(low=0.0, high=all_freqs_num - num_freqs_to_mask)
             f0 = int(f0)
-            spec[f0:f0 + num_freqs_to_mask, :] = value
+            spec[f0 : f0 + num_freqs_to_mask, :] = value
 
             time_percentage = random.uniform(0.0, time_masking)
 
             num_frames_to_mask = int(time_percentage * all_frames_num)
             t0 = np.random.uniform(low=0.0, high=all_frames_num - num_frames_to_mask)
             t0 = int(t0)
-            spec[:, t0:t0 + num_frames_to_mask] = value
+            spec[:, t0 : t0 + num_frames_to_mask] = value
 
         return spec
 
-class SpectToImage(AudioTransform):
 
+class SpectToImage(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):
         super(SpectToImage, self).__init__(always_apply, p)
-    
+
     def apply(self, data, **params):
         image, sr = data
         delta = librosa.feature.delta(image)
