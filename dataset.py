@@ -17,9 +17,9 @@ import torch
 train_audio_augmentation = albumentations.Compose(
     [
         RandomAudio(seconds=args.max_duration, always_apply=True),
-        NoiseInjection(p=0.33),
+        #NoiseInjection(p=0.33),
         MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
-        SpecAugment(p=0.33),
+        #SpecAugment(p=0.33),
         SpectToImage(always_apply=True),
     ]
 )
@@ -60,13 +60,16 @@ class BirdDataset:
 
         return sound_array, args.sample_rate
 
+    def load_npy(self, path):
+        return np.load(path.replace("mp3", "npy")).astype(np.float32), self.sample_rate
+
     def __getitem__(self, item):
 
         filename = self.filename[item]
         ebird_code = self.ebird_code[item]
         ebird_label = self.ebird_label[item]
 
-        data = self.load_audio(f"{args.ROOT_PATH}/{ebird_code}/{filename}")
+        data = self.load_npy(f"{args.ROOT_PATH}/{ebird_code}/{filename}")
         spect = self.aug(data=data)["data"]
 
         target = ebird_label

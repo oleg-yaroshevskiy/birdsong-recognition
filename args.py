@@ -2,8 +2,8 @@ class args:
 
     ROOT_PATH = "../input/train_audio"
 
-    num_classes = 10
-    max_duration = 5  # seconds
+    num_classes = 264
+    max_duration = 10  # seconds
 
     sample_rate = 32000
 
@@ -12,7 +12,7 @@ class args:
 
     batch_size = 16
     num_workers = 4
-    epochs = 2
+    epochs = 30
 
     lr = 0.0009
     wd = 1e-5

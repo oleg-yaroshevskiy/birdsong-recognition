@@ -1,5 +1,6 @@
 from utils import AverageMeter, get_position_accuracy
 from tqdm import tqdm
+import torch
 
 def train_fn(train_loader, model, optimizer, loss_fn, device, epoch):
     total_loss = AverageMeter()
@@ -33,7 +34,7 @@ def train_fn(train_loader, model, optimizer, loss_fn, device, epoch):
     return total_loss.avg
 
 
-def valid_fn(valid_loader, model, device, epoch):
+def valid_fn(valid_loader, model, loss_fn, device, epoch):
     total_loss = AverageMeter()
     accuracies = AverageMeter()
 
