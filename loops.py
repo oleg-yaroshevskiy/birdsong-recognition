@@ -1,6 +1,8 @@
 from utils import AverageMeter, get_position_accuracy
 from tqdm import tqdm
 import torch
+import wandb
+
 
 def train_fn(train_loader, model, optimizer, loss_fn, device, epoch):
     total_loss = AverageMeter()
@@ -31,6 +33,8 @@ def train_fn(train_loader, model, optimizer, loss_fn, device, epoch):
             f"Train E:{epoch+1} - Loss:{total_loss.avg:0.4f} - Acc:{accuracies.avg:0.4f}"
         )
 
+    wandb.log({"train mAP": accuracies.avg, "train loss": total_loss.avg}, step=epoch)
+
     return total_loss.avg
 
 
@@ -60,5 +64,7 @@ def valid_fn(valid_loader, model, loss_fn, device, epoch):
             t.set_description(
                 f"Eval E:{epoch+1} - Loss:{total_loss.avg:0.4f} - Acc:{accuracies.avg:0.4f}"
             )
+
+    wandb.log({"valid mAP": accuracies.avg, "valid loss": total_loss.avg}, step=epoch)
 
     return total_loss.avg, accuracies.avg

@@ -17,9 +17,9 @@ import torch
 train_audio_augmentation = albumentations.Compose(
     [
         RandomAudio(seconds=args.max_duration, always_apply=True),
-        #NoiseInjection(p=0.33),
+        # NoiseInjection(p=0.33),
         MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
-        #SpecAugment(p=0.33),
+        # SpecAugment(p=0.33),
         SpectToImage(always_apply=True),
     ]
 )
@@ -56,7 +56,9 @@ class BirdDataset:
             sound_array = np.array(sound.get_array_of_samples(), dtype=np.float32)
         except:
             print("my bad")
-            sound_array = np.zeros(self.sample_rate * args.max_duration, dtype=np.float32)
+            sound_array = np.zeros(
+                self.sample_rate * args.max_duration, dtype=np.float32
+            )
 
         return sound_array, args.sample_rate
 

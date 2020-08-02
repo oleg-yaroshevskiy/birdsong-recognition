@@ -31,7 +31,7 @@ class AverageMeter(object):
 
 
 def get_position_accuracy(logits, labels):
-    #print(logits.shape)
+    # print(logits.shape)
     predictions = np.argmax(F.softmax(logits, dim=1).cpu().data.numpy(), axis=1)
     labels = labels.cpu().data.numpy()
     total_num = 0

@@ -10,8 +10,8 @@ class args:
     img_height = 128
     img_width = 313
 
-    batch_size = 16
-    num_workers = 4
+    batch_size = 64
+    num_workers = 16
     epochs = 30
 
     lr = 0.0009

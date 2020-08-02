@@ -5,6 +5,7 @@ import albumentations
 from albumentations.core.transforms_interface import DualTransform, BasicTransform
 import random
 
+
 def compute_stft(audio, window_size, hop_size, log=True, eps=1e-4):
     f, t, s = scipy.signal.stft(audio, nperseg=window_size, noverlap=hop_size)
 

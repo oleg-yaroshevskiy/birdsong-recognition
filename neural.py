@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from args import args
 
+
 class ResNet18(nn.Module):
     def __init__(self, pretrained):
         super(ResNet18, self).__init__()

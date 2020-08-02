@@ -8,9 +8,10 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
 from neural import ResNet18
 from loops import train_fn, valid_fn
+import wandb
 
-#TODO: add seeds
-#TODO: pass config explicitly
+# TODO: add seeds
+# TODO: pass config explicitly
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
@@ -25,6 +26,12 @@ kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
     kfold.split(train.filename.values, train.ebird_code.values)
 ):
+    wandb.init(
+        # config=args.__dict__,
+        project="birdsong",
+        name="resnet18_f{}".format(fold),
+        id="resnet18_f{}".format(fold),
+    )
     train_df = train.loc[t_idx]
     train_dataset = BirdDataset(df=train_df)
 
@@ -37,7 +44,7 @@ for fold, (t_idx, v_idx) in enumerate(
         shuffle=True,
         pin_memory=True,
         drop_last=False,
-        num_workers=16
+        num_workers=args.num_workers,
     )
 
     valid_loader = DataLoader(
@@ -45,7 +52,7 @@ for fold, (t_idx, v_idx) in enumerate(
         batch_size=args.batch_size,
         pin_memory=True,
         drop_last=False,
-        num_workers=16
+        num_workers=args.num_workers,
     )
 
     loss_fn = nn.CrossEntropyLoss(ignore_index=-1)
@@ -69,4 +76,5 @@ for fold, (t_idx, v_idx) in enumerate(
 
         if valid_acc > best_acc:
             torch.save(model.state_dict(), f"fold_{fold}.pth")
+            wandb.save(f"fold_{fold}.pth")
             best_acc = valid_acc
