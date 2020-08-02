@@ -35,11 +35,14 @@ kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
     kfold.split(train.filename.values, train.ebird_code.values)
 ):
+    if fold ==0 :
+        continue
     wandb.init(
         config=args,
         project="birdsong",
         name="{}_f{}".format(args.model, fold),
         id="{}_f{}".format(args.model, fold),
+        reinit=True,
     )
     train_df = train.loc[t_idx]
     train_dataset = BirdDataset(df=train_df)
@@ -96,3 +99,5 @@ for fold, (t_idx, v_idx) in enumerate(
             torch.save(model.state_dict(), f"fold_{fold}.pth")
             wandb.save(f"fold_{fold}.pth")
             best_acc = valid_acc
+
+    wandb.join()
