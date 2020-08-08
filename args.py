@@ -9,6 +9,7 @@ parser.add_argument("--folds", type=int, default=5)
 parser.add_argument("--num_workers", type=int, default=16)
 
 parser.add_argument("--model", type=str, default="se50")
+parser.add_argument("--name", type=str, default="")
 parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--epochs", type=int, default=30)
 

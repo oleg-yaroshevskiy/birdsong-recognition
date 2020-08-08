@@ -17,9 +17,9 @@ import torch
 train_audio_augmentation = albumentations.Compose(
     [
         RandomAudio(seconds=args.max_duration, always_apply=True),
-        # NoiseInjection(p=0.33),
+        NoiseInjection(p=0.33),
         MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
-        # SpecAugment(p=0.33),
+        SpecAugment(p=0.33),
         SpectToImage(always_apply=True),
     ]
 )
@@ -38,6 +38,7 @@ class BirdDataset:
 
         self.filename = df.filename.values
         self.ebird_label = df.ebird_label.values
+        self.ebird_label_secondary = df.ebird_label_secondary.values
         self.ebird_code = df.ebird_code.values
         self.sample_rate = args.sample_rate
 
@@ -57,19 +58,28 @@ class BirdDataset:
         except:
             print("my bad")
             sound_array = np.zeros(
-                self.sample_rate * args.max_duration, dtype=np.float32
+                self.sample_rate * 5, dtype=np.float32
             )
 
         return sound_array, args.sample_rate
 
     def load_npy(self, path):
-        return np.load(path.replace("mp3", "npy")).astype(np.float32), self.sample_rate
+        try:
+            return np.load(path.replace("mp3", "npy")).astype(np.float32), self.sample_rate
+        except:
+            return np.zeros(
+                self.sample_rate * 5, dtype=np.float32 ), self.sample_rate
 
     def __getitem__(self, item):
 
         filename = self.filename[item]
         ebird_code = self.ebird_code[item]
         ebird_label = self.ebird_label[item]
+        ebird_label_secondary = torch.zeros(264)
+        ebird_label_secondary.scatter_(
+            0, torch.Tensor(self.ebird_label_secondary[item]).long(), 1
+        )
+
 
         data = self.load_npy(f"{args.ROOT_PATH}/{ebird_code}/{filename}")
         spect = self.aug(data=data)["data"]
@@ -79,6 +89,7 @@ class BirdDataset:
         return {
             "spect": torch.tensor(spect, dtype=torch.float),
             "target": torch.tensor(target, dtype=torch.long),
+            "target_secondary": ebird_label_secondary.long(),
         }
 
 

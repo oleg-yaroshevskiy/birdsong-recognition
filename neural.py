@@ -1,4 +1,5 @@
 import pretrainedmodels
+import torch
 from torch import nn
 import torch.nn.functional as F
 from args import args

@@ -12,9 +12,11 @@ print("Total files", len(files))
 
 
 def to_numpy(file):
-    samples, _ = librosa.load(file, sr=32000)
-    np.save(file.replace("mp3", "npy"), samples)
-
+    try:
+        samples, _ = librosa.load(file, sr=32000)
+        np.save(file.replace("mp3", "npy"), samples)
+    except:
+        print(file)
 
 with Pool(12) as p:
     _ = list(tqdm(p.imap(to_numpy, files), total=len(files)))

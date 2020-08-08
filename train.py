@@ -29,19 +29,23 @@ test = pd.read_csv("../input/test.csv")
 submission = pd.read_csv("../input/sample_submission.csv")
 
 # encoding features TODO: should be fixed for inference too
-train["ebird_label"] = LabelEncoder().fit_transform(train.ebird_code.values)
+train_le = LabelEncoder().fit(train.ebird_code.values)
+train["ebird_label"] = train_le.transform(train.ebird_code.values)
+
+mapping = pd.Series(train.ebird_code.values, index=train.primary_label).to_dict()
+train["ebird_label_secondary"] = train.secondary_labels.apply(
+    lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
+)
 
 kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
     kfold.split(train.filename.values, train.ebird_code.values)
 ):
-    if fold ==0 :
-        continue
     wandb.init(
         config=args,
         project="birdsong",
-        name="{}_f{}".format(args.model, fold),
-        id="{}_f{}".format(args.model, fold),
+        name="{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else ""),
+        id="{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else ""),
         reinit=True,
     )
     train_df = train.loc[t_idx]
@@ -69,7 +73,7 @@ for fold, (t_idx, v_idx) in enumerate(
         worker_init_fn=lambda _: np.random.seed(torch.initial_seed() % 2**32),
     )
 
-    loss_fn = nn.CrossEntropyLoss(ignore_index=-1)
+    loss_fn = nn.BCEWithLogitsLoss()
     #model = ResNet18(pretrained=False).to(device)
     model = torch.hub.load(
         'rwightman/gen-efficientnet-pytorch', 
