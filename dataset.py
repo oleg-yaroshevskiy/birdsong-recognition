@@ -3,6 +3,7 @@ import os
 from pydub import AudioSegment
 import albumentations
 from transforms import (
+    IntRandomAudio,
     RandomAudio,
     NoiseInjection,
     MelSpectrogram,
@@ -16,7 +17,7 @@ import torch
 
 train_audio_augmentation = albumentations.Compose(
     [
-        RandomAudio(seconds=args.max_duration, always_apply=True),
+        IntRandomAudio(seconds=args.max_duration, always_apply=True),
         NoiseInjection(p=0.33),
         MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
         SpecAugment(p=0.33),
@@ -26,7 +27,7 @@ train_audio_augmentation = albumentations.Compose(
 
 valid_audio_augmentation = albumentations.Compose(
     [
-        RandomAudio(seconds=args.max_duration, always_apply=True),
+        IntRandomAudio(seconds=args.max_duration, always_apply=True),
         MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
         SpectToImage(always_apply=True),
     ]

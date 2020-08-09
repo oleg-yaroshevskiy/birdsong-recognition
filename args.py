@@ -8,23 +8,30 @@ parser.add_argument("--seed", type=int, default=42)
 parser.add_argument("--folds", type=int, default=5)
 parser.add_argument("--num_workers", type=int, default=16)
 
-parser.add_argument("--model", type=str, default="se50")
+parser.add_argument("--model", type=str, default="b4")
 parser.add_argument("--name", type=str, default="")
-parser.add_argument("--batch_size", type=int, default=64)
-parser.add_argument("--epochs", type=int, default=30)
+parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--epochs", type=int, default=50)
 
-parser.add_argument("--max_duration", type=int, default=10)
-parser.add_argument("--lr", type=float, default=0.0009)
+parser.add_argument("--max_duration", type=int, default=5)
+parser.add_argument("--warmup", type=int, default=0) # < 1 epoch
+parser.add_argument("--lr_stop", type=str, default="1e-5")
+parser.add_argument("--lr_base", type=str, default="1e-3")
 parser.add_argument("--wd", type=float, default=1e-5)
 parser.add_argument("--momentum", type=float, default=0.9)
 parser.add_argument("--eps", type=float, default=1e-8)
-
-parser.add_argument("--melspectrogram_parameters_n_mels", type=int, default=128)
-parser.add_argument("--melspectrogram_parameters_fmin", type=int, default=20)
-parser.add_argument("--melspectrogram_parameters_fmax", type=int, default=16000)
+parser.add_argument("--lr_patience", type=int, default=2)
+parser.add_argument("--lr_drop_rate", type=str, default="np.sqrt(0.1)")
+parser.add_argument("--opt_lookahead", type=str, default="False")
 
 args = parser.parse_args()
 print("Initial arguments", args)
+
+for arg in ["opt_lookahead"]:
+    args.__dict__[arg] = args.__dict__[arg] == "True"
+
+for arg in ["lr_base", "lr_drop_rate", "lr_stop"]:
+    args.__dict__[arg] = eval(args.__dict__[arg])
 
 args.__dict__["betas"] = (0.9, 0.999)
 args.__dict__["num_classes"] = 264

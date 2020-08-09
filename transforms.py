@@ -4,6 +4,7 @@ import librosa
 import albumentations
 from albumentations.core.transforms_interface import DualTransform, BasicTransform
 import random
+import pandas as pd
 
 
 def compute_stft(audio, window_size, hop_size, log=True, eps=1e-4):
@@ -101,6 +102,45 @@ class TimeStretch(AudioTransform):
 
         return augmented_sound, sr
 
+
+class IntRandomAudio(AudioTransform):
+    def __init__(self, seconds=5, always_apply=False, p=0.5):
+        super(IntRandomAudio, self).__init__(always_apply, p)
+
+        self.seconds = seconds
+
+    def apply(self, data, **params):
+        sound, sr = data
+        half = int(sr * self.seconds) // 2
+        
+        if len(sound) < half * 2:
+            padding = half * 2 - len(sound)
+            trim_sound = np.pad(sound, (0, padding), "constant")
+            return trim_sound, sr
+
+        frames = len(sound) // 3200
+        probs = np.abs(sound)[:frames * 3200].reshape(-1, 3200).max(axis=-1)
+        #probs = probs.repeat(32000)
+        #probs = probs[half:len(sound) - half]
+        # probs = pd.Series(np.abs(sound)).rolling(window=32000, min_periods=1, center=True).max()[half : len(sound) - half]
+        probs /= probs.sum()
+
+        idx = np.random.choice(
+            range(frames), 
+            1, 
+            p=probs
+        )[0] * 3200 + np.random.randint(-1600, 1600)
+        #print(idx / len(sound))
+        
+        if idx < half:
+            return sound[:half * 2], sr
+        
+        elif idx > len(sound) - half:
+            return sound[-half*2:], sr
+        
+        else:
+            #print("middle")
+            return sound[idx - half: idx + half], sr
 
 class RandomAudio(AudioTransform):
     def __init__(self, seconds=5, always_apply=False, p=0.5):

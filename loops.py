@@ -1,4 +1,4 @@
-from utils import AverageMeter, get_position_accuracy
+from utils import AverageMeter, get_position_accuracy, get_learning_rate
 from tqdm import tqdm
 import torch
 import wandb
@@ -12,7 +12,7 @@ def onehot(targets, targets_secondary, num_classes, smoothing=0.):
 
     return one_hot
 
-def train_fn(train_loader, model, optimizer, loss_fn, device, epoch):
+def train_fn(train_loader, model, optimizer, scheduler_warmup, loss_fn, device, epoch):
     total_loss = AverageMeter()
     accuracies = AverageMeter()
 
@@ -20,12 +20,14 @@ def train_fn(train_loader, model, optimizer, loss_fn, device, epoch):
 
     t = tqdm(train_loader)
     for step, d in enumerate(t):
+        if scheduler_warmup is not None and epoch < 3:
+            scheduler_warmup.step()
 
         spect = d["spect"].to(device)
 
         outputs = model(spect)
 
-        loss = loss_fn(outputs, onehot(d["target"], d["target_secondary"], 264, smoothing=0.2).to(device))
+        loss = loss_fn(outputs, onehot(d["target"], d["target_secondary"], 264, smoothing=0.).to(device))
 
         optimizer.zero_grad()
         loss.backward()
@@ -40,7 +42,10 @@ def train_fn(train_loader, model, optimizer, loss_fn, device, epoch):
             f"Train E:{epoch+1} - Loss:{total_loss.avg:0.4f} - Acc:{accuracies.avg:0.4f}"
         )
 
-    wandb.log({"train mAP": accuracies.avg, "train loss": total_loss.avg}, step=epoch)
+    wandb.log({
+        "train mAP": accuracies.avg, 
+        "train loss": total_loss.avg,
+        "learning rate": get_learning_rate(optimizer)}, step=epoch)
 
     return total_loss.avg
 

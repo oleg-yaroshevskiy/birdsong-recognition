@@ -11,9 +11,11 @@ from neural import ResNet18
 from loops import train_fn, valid_fn
 import wandb
 import random
+from transformers import get_constant_schedule_with_warmup
+from utils import (
+    get_learning_rate, isclose, Lookahead
+)
 
-# TODO: add seeds
-# TODO: pass config explicitly
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
@@ -48,6 +50,8 @@ for fold, (t_idx, v_idx) in enumerate(
         id="{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else ""),
         reinit=True,
     )
+
+    ### Dataset / Dataloader ###
     train_df = train.loc[t_idx]
     train_dataset = BirdDataset(df=train_df)
 
@@ -74,7 +78,6 @@ for fold, (t_idx, v_idx) in enumerate(
     )
 
     loss_fn = nn.BCEWithLogitsLoss()
-    #model = ResNet18(pretrained=False).to(device)
     model = torch.hub.load(
         'rwightman/gen-efficientnet-pytorch', 
         'tf_efficientnet_%s_ns' % args.model, 
@@ -82,26 +85,42 @@ for fold, (t_idx, v_idx) in enumerate(
         num_classes = args.num_classes
     ).cuda()
 
+    ### OPTIMIZATION ###
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=args.lr,
+        lr=args.lr_base,
         betas=args.betas,
         eps=args.eps,
         weight_decay=args.wd,
+    )
+    if args.opt_lookahead:
+        optimizer = Lookahead(optimizer)
+    scheduler_warmup = get_constant_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=args.warmup
+    )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='max', factor=args.lr_drop_rate, patience=args.lr_patience, threshold=0
     )
 
     best_acc = 0
 
     for epoch in range(args.epochs):
 
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn, device, epoch)
+        train_loss = train_fn(train_loader, model, optimizer, scheduler_warmup, loss_fn, device, epoch)
         valid_loss, valid_acc = valid_fn(valid_loader, model, loss_fn, device, epoch)
-
+        
         print(f"Fold {fold} ** Epoch {epoch+1} **==>** Accuracy = {valid_acc}")
 
         if valid_acc > best_acc:
             torch.save(model.state_dict(), f"fold_{fold}.pth")
             wandb.save(f"fold_{fold}.pth")
             best_acc = valid_acc
+
+        scheduler.step(valid_acc)
+
+        if isclose(optimizer, args.lr_stop):
+            print("Exit on LR")
+            break
 
     wandb.join()
