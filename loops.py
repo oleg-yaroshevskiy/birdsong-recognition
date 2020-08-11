@@ -17,9 +17,13 @@ def train_fn(train_loader, model, optimizer, scheduler_warmup, loss_fn, device, 
     accuracies = AverageMeter()
 
     model.train()
+    optimizer.zero_grad()
+    accumulated_loss = 0
+    batch_idx = 0
 
     t = tqdm(train_loader)
     for step, d in enumerate(t):
+        #try:
         if scheduler_warmup is not None and epoch < 3:
             scheduler_warmup.step()
 
@@ -28,10 +32,18 @@ def train_fn(train_loader, model, optimizer, scheduler_warmup, loss_fn, device, 
         outputs = model(spect)
 
         loss = loss_fn(outputs, onehot(d["target"], d["target_secondary"], 264, smoothing=0.).to(device))
-
-        optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+
+        accumulated_loss += loss
+        if batch_idx % 1 == 0 and batch_idx > 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            accumulated_loss = 0
+        batch_idx += 1
+
+        # optimizer.zero_grad()
+        # loss.backward()
+        # optimizer.step()
 
         acc, n_position = get_position_accuracy(outputs, d["target"].to(device))
 
@@ -41,6 +53,8 @@ def train_fn(train_loader, model, optimizer, scheduler_warmup, loss_fn, device, 
         t.set_description(
             f"Train E:{epoch+1} - Loss:{total_loss.avg:0.4f} - Acc:{accuracies.avg:0.4f}"
         )
+        # except Exception as e:
+        #     print("error:", e)
 
     wandb.log({
         "train mAP": accuracies.avg, 

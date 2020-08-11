@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
-from neural import ResNet18
+from neural import ResNet18, Cnn14_DecisionLevelAtt, PANNsLoss
 from loops import train_fn, valid_fn
 import wandb
 import random
@@ -15,6 +15,7 @@ from transformers import get_constant_schedule_with_warmup
 from utils import (
     get_learning_rate, isclose, Lookahead
 )
+from collections import OrderedDict
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
@@ -27,6 +28,10 @@ np.random.seed(args.seed)
 random.seed(args.seed)
 
 train = pd.read_csv("../input/train.csv")
+aux_train = pd.read_csv("../input/train_extended.csv")
+train["folder"] = "train_audio"
+aux_train["folder"] = "xeno-carlo"
+
 test = pd.read_csv("../input/test.csv")
 submission = pd.read_csv("../input/sample_submission.csv")
 
@@ -36,6 +41,11 @@ train["ebird_label"] = train_le.transform(train.ebird_code.values)
 
 mapping = pd.Series(train.ebird_code.values, index=train.primary_label).to_dict()
 train["ebird_label_secondary"] = train.secondary_labels.apply(
+    lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
+)
+
+aux_train["ebird_label"] = train_le.transform(aux_train.ebird_code.values)
+aux_train["ebird_label_secondary"] = aux_train.secondary_labels.apply(
     lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
 )
 
@@ -53,6 +63,7 @@ for fold, (t_idx, v_idx) in enumerate(
 
     ### Dataset / Dataloader ###
     train_df = train.loc[t_idx]
+    train_df = pd.concat([train_df, aux_train], axis=0)
     train_dataset = BirdDataset(df=train_df)
 
     valid_df = train.loc[v_idx]
@@ -77,13 +88,29 @@ for fold, (t_idx, v_idx) in enumerate(
         worker_init_fn=lambda _: np.random.seed(torch.initial_seed() % 2**32),
     )
 
-    loss_fn = nn.BCEWithLogitsLoss()
-    model = torch.hub.load(
-        'rwightman/gen-efficientnet-pytorch', 
-        'tf_efficientnet_%s_ns' % args.model, 
-        pretrained=True,
-        num_classes = args.num_classes
-    ).cuda()
+    if args.model == "cnn14_att":
+        model = Cnn14_DecisionLevelAtt(args.num_classes).cuda()
+        state = torch.load("Cnn14_DecisionLevelAtt_mAP=0.425.pth")["model"]
+        new_state_dict = OrderedDict()
+        for k, v in state.items():
+            if "att_block." in k and v.dim() != 0:
+                print(k)
+                new_state_dict[k] = v[:args.num_classes]
+            else:
+                new_state_dict[k] = v 
+
+        model.load_state_dict(new_state_dict, strict=False)
+
+        loss_fn = PANNsLoss()
+    else:
+        model = torch.hub.load(
+            'rwightman/gen-efficientnet-pytorch', 
+            'tf_efficientnet_%s_ns' % args.model, 
+            pretrained=True,
+            num_classes = args.num_classes
+        ).cuda()
+
+        loss_fn = torch.nn.BCEWithLogitsLoss()
 
     ### OPTIMIZATION ###
     optimizer = torch.optim.AdamW(

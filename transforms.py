@@ -247,4 +247,4 @@ class SpectToImage(AudioTransform):
         image = np.stack([image, delta, accelerate], axis=0)
         image = image.astype(np.float32) / 100.0
 
-        return image
+        return image#np.expand_dims(image, 0)

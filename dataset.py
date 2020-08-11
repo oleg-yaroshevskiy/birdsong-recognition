@@ -43,6 +43,8 @@ class BirdDataset:
         self.ebird_code = df.ebird_code.values
         self.sample_rate = args.sample_rate
 
+        self.folder = df.folder.values
+
         if valid:
             self.aug = valid_audio_augmentation
         else:
@@ -80,9 +82,10 @@ class BirdDataset:
         ebird_label_secondary.scatter_(
             0, torch.Tensor(self.ebird_label_secondary[item]).long(), 1
         )
+        folder = self.folder[item]
 
 
-        data = self.load_npy(f"{args.ROOT_PATH}/{ebird_code}/{filename}")
+        data = self.load_npy(f"{args.ROOT_PATH}/{folder}/{ebird_code}/{filename}")
         spect = self.aug(data=data)["data"]
 
         target = ebird_label
