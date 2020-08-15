@@ -122,17 +122,14 @@ class IntRandomAudio(AudioTransform):
             trim_sound = np.pad(sound, (0, padding), "constant")
             return trim_sound, sr
 
-        frames = len(sound) // 3200
-        probs = np.abs(sound)[: frames * 3200].reshape(-1, 3200).max(axis=-1)
-        # probs = probs.repeat(32000)
-        # probs = probs[half:len(sound) - half]
-        # probs = pd.Series(np.abs(sound)).rolling(window=32000, min_periods=1, center=True).max()[half : len(sound) - half]
+        step = sr // 10
+        frames = len(sound) // step
+        probs = np.abs(sound)[: frames * step].reshape(-1, step).max(axis=-1)
         probs /= probs.sum()
 
-        idx = np.random.choice(range(frames), 1, p=probs)[0] * 3200 + np.random.randint(
-            -1600, 1600
+        idx = np.random.choice(range(frames), 1, p=probs)[0] * step + np.random.randint(
+            -(step // 2), (step // 2)
         )
-        # print(idx / len(sound))
 
         if idx < half:
             return sound[: half * 2], sr
@@ -141,7 +138,6 @@ class IntRandomAudio(AudioTransform):
             return sound[-half * 2 :], sr
 
         else:
-            # print("middle")
             return sound[idx - half : idx + half], sr
 
 

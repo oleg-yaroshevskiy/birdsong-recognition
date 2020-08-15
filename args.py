@@ -24,10 +24,12 @@ parser.add_argument("--lr_patience", type=int, default=2)
 parser.add_argument("--lr_drop_rate", type=str, default="np.sqrt(0.1)")
 parser.add_argument("--opt_lookahead", type=str, default="False")
 
+parser.add_argument("--add_xeno", type=str, default="False")
+
 args = parser.parse_args()
 print("Initial arguments", args)
 
-for arg in ["opt_lookahead"]:
+for arg in ["opt_lookahead", "add_xeno"]:
     args.__dict__[arg] = args.__dict__[arg] == "True"
 
 for arg in ["lr_base", "lr_drop_rate", "lr_stop"]:

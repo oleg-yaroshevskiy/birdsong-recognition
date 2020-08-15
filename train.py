@@ -27,8 +27,9 @@ np.random.seed(args.seed)
 random.seed(args.seed)
 
 train = pd.read_csv("../input/train.csv")
-aux_train = pd.read_csv("../input/train_extended.csv")
 train["folder"] = "train_audio"
+
+aux_train = pd.read_csv("../input/train_extended.csv")
 aux_train["folder"] = "xeno-carlo"
 
 test = pd.read_csv("../input/test.csv")
@@ -78,7 +79,8 @@ for fold, (t_idx, v_idx) in enumerate(
 
     ### Dataset / Dataloader ###
     train_df = train.loc[t_idx]
-    # train_df = pd.concat([train_df, aux_train], axis=0)
+    if args.add_xeno:
+        train_df = pd.concat([train_df, aux_train], axis=0)
     train_dataset = BirdDataset(df=train_df)
 
     valid_df = train.loc[v_idx]
@@ -116,17 +118,18 @@ for fold, (t_idx, v_idx) in enumerate(
         model.load_state_dict(new_state_dict, strict=False)
 
         loss_fn = PANNsLoss()
+    elif args.model == "b4_att":
+        from geffnet import tf_efficientnet_b4_ns
+        model = tf_efficientnet_b4_ns(pretrained=True, num_classes=args.num_classes).cuda()
+        loss_fn = PANNsLoss()
     else:
-        # from geffnet import tf_efficientnet_b4_ns
-        # model = tf_efficientnet_b4_ns(pretrained=True, num_classes=args.num_classes).cuda()
         model = torch.hub.load(
             "rwightman/gen-efficientnet-pytorch",
             "tf_efficientnet_%s_ns" % args.model,
             pretrained=True,
             num_classes=args.num_classes,
         ).cuda()
-        # model.load_state_dict(torch.load("fold_0.pth"))
-        # loss_fn = PANNsLoss()
+        
         loss_fn = torch.nn.BCEWithLogitsLoss()
 
     ### OPTIMIZATION ###

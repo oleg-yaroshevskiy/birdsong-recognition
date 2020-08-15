@@ -67,16 +67,16 @@ def get_f1_micro(logits, labels, threshold=None):
     return f1_score(labels, probs > threshold, average="micro")
 
 
-def get_f1_micro_nocall(logits, labels, threshold=None):
+def get_f1_micro_nocall(logits, labels, threshold=None, num_classes=264):
     probs = logits.sigmoid().cpu().data.numpy() > threshold
 
-    new_probs = np.zeros((probs.shape[0], probs.shape[1] + 1))
-    new_probs[:, :264] = probs.astype(int)
+    new_probs = np.zeros((probs.shape[0], num_classes + 1))
+    new_probs[:, :num_classes] = probs.astype(int)
+    
+    # nocall if all zeros
     for i in range(probs.shape[0]):
         if probs[i].max() == 0:
             new_probs[i, -1] = 1
-
-    labels = labels
 
     return f1_score(labels, new_probs > threshold, average="micro")
 
