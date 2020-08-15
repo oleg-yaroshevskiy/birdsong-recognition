@@ -8,14 +8,13 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
 from neural import ResNet18, Cnn14_DecisionLevelAtt, PANNsLoss
-from loops import train_fn, valid_fn
+from loops import train_fn, valid_fn, test_fn
 import wandb
 import random
 from transformers import get_constant_schedule_with_warmup
-from utils import (
-    get_learning_rate, isclose, Lookahead
-)
+from utils import get_learning_rate, isclose, Lookahead
 from collections import OrderedDict
+from test import prepare_test
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
@@ -48,6 +47,22 @@ aux_train["ebird_label"] = train_le.transform(aux_train.ebird_code.values)
 aux_train["ebird_label_secondary"] = aux_train.secondary_labels.apply(
     lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
 )
+test_samples = prepare_test(
+    [
+        "../input/test/BLKFR-10-CPL_20190611_093000.pt540.mp3",
+        "../input/test/ORANGE-7-CAP_20190606_093000.pt623.mp3",
+        #"../input/test/SSW49_20170520.wav",
+        #"../input/test/SSW50_20170819.wav",
+        #"../input/test/SSW51_20170819.wav",
+        #"../input/test/SSW52_20170429.wav",
+        #"../input/test/SSW53_20170513.wav",
+        #"../input/test/SSW54_20170610.wav"
+    ],
+    pd.read_csv("../input/test/merged_summary.csv"),
+    train_le,
+    args.melspectrogram_parameters,
+)
+
 
 kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
@@ -63,7 +78,7 @@ for fold, (t_idx, v_idx) in enumerate(
 
     ### Dataset / Dataloader ###
     train_df = train.loc[t_idx]
-    train_df = pd.concat([train_df, aux_train], axis=0)
+    # train_df = pd.concat([train_df, aux_train], axis=0)
     train_dataset = BirdDataset(df=train_df)
 
     valid_df = train.loc[v_idx]
@@ -76,7 +91,7 @@ for fold, (t_idx, v_idx) in enumerate(
         pin_memory=True,
         drop_last=True,
         num_workers=args.num_workers,
-        worker_init_fn=lambda _: np.random.seed(torch.initial_seed() % 2**32)
+        worker_init_fn=lambda _: np.random.seed(torch.initial_seed() % 2 ** 32),
     )
 
     valid_loader = DataLoader(
@@ -85,7 +100,6 @@ for fold, (t_idx, v_idx) in enumerate(
         pin_memory=True,
         drop_last=False,
         num_workers=args.num_workers,
-        worker_init_fn=lambda _: np.random.seed(torch.initial_seed() % 2**32),
     )
 
     if args.model == "cnn14_att":
@@ -95,21 +109,24 @@ for fold, (t_idx, v_idx) in enumerate(
         for k, v in state.items():
             if "att_block." in k and v.dim() != 0:
                 print(k)
-                new_state_dict[k] = v[:args.num_classes]
+                new_state_dict[k] = v[: args.num_classes]
             else:
-                new_state_dict[k] = v 
+                new_state_dict[k] = v
 
         model.load_state_dict(new_state_dict, strict=False)
 
         loss_fn = PANNsLoss()
     else:
+        # from geffnet import tf_efficientnet_b4_ns
+        # model = tf_efficientnet_b4_ns(pretrained=True, num_classes=args.num_classes).cuda()
         model = torch.hub.load(
-            'rwightman/gen-efficientnet-pytorch', 
-            'tf_efficientnet_%s_ns' % args.model, 
+            "rwightman/gen-efficientnet-pytorch",
+            "tf_efficientnet_%s_ns" % args.model,
             pretrained=True,
-            num_classes = args.num_classes
+            num_classes=args.num_classes,
         ).cuda()
-
+        # model.load_state_dict(torch.load("fold_0.pth"))
+        # loss_fn = PANNsLoss()
         loss_fn = torch.nn.BCEWithLogitsLoss()
 
     ### OPTIMIZATION ###
@@ -123,21 +140,26 @@ for fold, (t_idx, v_idx) in enumerate(
     if args.opt_lookahead:
         optimizer = Lookahead(optimizer)
     scheduler_warmup = get_constant_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=args.warmup
+        optimizer, num_warmup_steps=args.warmup
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='max', factor=args.lr_drop_rate, patience=args.lr_patience, threshold=0
+        optimizer,
+        mode="max",
+        factor=args.lr_drop_rate,
+        patience=args.lr_patience,
+        threshold=0,
     )
 
     best_acc = 0
 
     for epoch in range(args.epochs):
 
-        train_loss = train_fn(train_loader, model, optimizer, scheduler_warmup, loss_fn, device, epoch)
+        train_loss = train_fn(
+            train_loader, model, optimizer, scheduler_warmup, loss_fn, device, epoch
+        )
         valid_loss, valid_acc = valid_fn(valid_loader, model, loss_fn, device, epoch)
-        
-        print(f"Fold {fold} ** Epoch {epoch+1} **==>** Accuracy = {valid_acc}")
+        _ = test_fn(model, loss_fn, device, test_samples, epoch)
+        print(f"Fold {fold} ** Epoch {epoch+1} **==>** Accuracy = {valid_acc:.4f}")
 
         if valid_acc > best_acc:
             torch.save(model.state_dict(), f"fold_{fold}.pth")

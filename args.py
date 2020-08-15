@@ -14,7 +14,7 @@ parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--epochs", type=int, default=50)
 
 parser.add_argument("--max_duration", type=int, default=5)
-parser.add_argument("--warmup", type=int, default=0) # < 1 epoch
+parser.add_argument("--warmup", type=int, default=0)  # < 1 epoch
 parser.add_argument("--lr_stop", type=str, default="1e-5")
 parser.add_argument("--lr_base", type=str, default="1e-3")
 parser.add_argument("--wd", type=float, default=1e-5)
@@ -37,8 +37,11 @@ args.__dict__["betas"] = (0.9, 0.999)
 args.__dict__["num_classes"] = 264
 args.__dict__["sample_rate"] = 32000
 args.__dict__["melspectrogram_parameters"] = {
-    "n_mels": 128, "fmin": 20, "fmax": 16000, "hop_length": 320, "n_fft": 1024
-
+    "n_mels": 128,
+    "fmin": 20,
+    "fmax": 16000,
+    "hop_length": 320,
+    "n_fft": 1024
     # default hop_length=512 n_fft=2048 n_mels=128
     # TODO: re-run b4 with those
 }

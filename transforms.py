@@ -1,10 +1,14 @@
 import scipy
-import numpy as np
 import librosa
+import numpy as np
+import tqdm
+from multiprocessing import Pool
 import albumentations
 from albumentations.core.transforms_interface import DualTransform, BasicTransform
 import random
 import pandas as pd
+import glob
+from multiprocessing import Manager
 
 
 def compute_stft(audio, window_size, hop_size, log=True, eps=1e-4):
@@ -112,35 +116,34 @@ class IntRandomAudio(AudioTransform):
     def apply(self, data, **params):
         sound, sr = data
         half = int(sr * self.seconds) // 2
-        
+
         if len(sound) < half * 2:
             padding = half * 2 - len(sound)
             trim_sound = np.pad(sound, (0, padding), "constant")
             return trim_sound, sr
 
         frames = len(sound) // 3200
-        probs = np.abs(sound)[:frames * 3200].reshape(-1, 3200).max(axis=-1)
-        #probs = probs.repeat(32000)
-        #probs = probs[half:len(sound) - half]
+        probs = np.abs(sound)[: frames * 3200].reshape(-1, 3200).max(axis=-1)
+        # probs = probs.repeat(32000)
+        # probs = probs[half:len(sound) - half]
         # probs = pd.Series(np.abs(sound)).rolling(window=32000, min_periods=1, center=True).max()[half : len(sound) - half]
         probs /= probs.sum()
 
-        idx = np.random.choice(
-            range(frames), 
-            1, 
-            p=probs
-        )[0] * 3200 + np.random.randint(-1600, 1600)
-        #print(idx / len(sound))
-        
+        idx = np.random.choice(range(frames), 1, p=probs)[0] * 3200 + np.random.randint(
+            -1600, 1600
+        )
+        # print(idx / len(sound))
+
         if idx < half:
-            return sound[:half * 2], sr
-        
+            return sound[: half * 2], sr
+
         elif idx > len(sound) - half:
-            return sound[-half*2:], sr
-        
+            return sound[-half * 2 :], sr
+
         else:
-            #print("middle")
-            return sound[idx - half: idx + half], sr
+            # print("middle")
+            return sound[idx - half : idx + half], sr
+
 
 class RandomAudio(AudioTransform):
     def __init__(self, seconds=5, always_apply=False, p=0.5):
@@ -164,6 +167,57 @@ class RandomAudio(AudioTransform):
             trim_sound = trim_sound[:min_samples]
 
         return trim_sound, sr
+
+
+class AddBackground(AudioTransform):
+    def __init__(self, always_apply=False, p=0.5):
+        super(AddBackground, self).__init__(always_apply, p)
+        df = pd.read_csv("../input/env/esc50.csv")
+        categories = [
+            "thunderstorm",
+            "airplane",
+            "sheep",
+            "water_drops",
+            "wind",
+            "footsteps",
+            "frog",
+            "brushing_teeth" "drinking_sipping",
+            "rain",
+            "insects",
+            "breathing",
+            "coughing",
+            "clock_tick",
+            "sneezing",
+            "sea_waves",
+            "crickets",
+        ]
+        self.background_audios = df[df.category.isin(categories)].filename.values
+
+    def apply(self, data, **params):
+        sound, sr = data
+        try:
+            alpha = np.random.rand()
+            bg = random.choice(self.background_audios)
+            bg = librosa.load("../input/env/audio/audio/" + bg, 32000)[0]
+
+            sound = alpha * sound + bg * (1 - alpha)
+            #print("all good")
+        except Exception as e:
+            #print("shit happens", e)
+            "nothing"
+
+        return sound, sr
+
+class VolumeOff(AudioTransform):
+    def __init__(self, always_apply=False, p=0.5):
+        super(VolumeOff, self).__init__(always_apply, p)
+
+    def apply(self, data, **params):
+        sound, sr = data
+        alpha = np.random.rand()
+        sound = alpha * sound
+
+        return sound, sr
 
 
 class MelSpectrogram(AudioTransform):
@@ -247,4 +301,4 @@ class SpectToImage(AudioTransform):
         image = np.stack([image, delta, accelerate], axis=0)
         image = image.astype(np.float32) / 100.0
 
-        return image#np.expand_dims(image, 0)
+        return image  # np.expand_dims(image, 0)

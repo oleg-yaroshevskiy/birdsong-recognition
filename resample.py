@@ -18,5 +18,6 @@ def to_numpy(file):
     except:
         print(file)
 
+
 with Pool(36) as p:
     _ = list(tqdm(p.imap(to_numpy, files), total=len(files)))

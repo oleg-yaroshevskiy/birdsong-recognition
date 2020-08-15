@@ -5,6 +5,7 @@ from torch.optim.optimizer import Optimizer, required
 from collections import defaultdict
 from itertools import chain
 import math
+from sklearn.metrics import f1_score
 
 
 def to_list(tensor):
@@ -34,9 +35,11 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def get_position_accuracy(logits, labels):
-    # print(logits.shape)
-    predictions = np.argmax(F.softmax(logits, dim=1).cpu().data.numpy(), axis=1)
+def get_position_accuracy(logits, labels, threshold=None):
+    if threshold is None:
+        predictions = np.argmax(F.softmax(logits, dim=1).cpu().data.numpy(), axis=1)
+    else:
+        predictions = logits.sigmoid().cpu().data.numpy()
     labels = labels.cpu().data.numpy()
     total_num = 0
     sum_correct = 0
@@ -44,13 +47,38 @@ def get_position_accuracy(logits, labels):
     for i in range(len(labels)):
         if labels[i] >= 0:
             total_num += 1
-            if predictions[i] == labels[i]:
-                sum_correct += 1
+            if threshold is None:
+                if predictions[i] == labels[i]:
+                    sum_correct += 1
+            else:
+                if predictions[i][labels[i]] >= threshold:
+                    sum_correct += 1
 
     if total_num == 0:
         total_num = 1e-7
 
     return np.float32(sum_correct) / total_num, total_num
+
+
+def get_f1_micro(logits, labels, threshold=None):
+    probs = logits.sigmoid().cpu().data.numpy()
+    labels = labels.cpu().data.numpy()
+
+    return f1_score(labels, probs > threshold, average="micro")
+
+
+def get_f1_micro_nocall(logits, labels, threshold=None):
+    probs = logits.sigmoid().cpu().data.numpy() > threshold
+
+    new_probs = np.zeros((probs.shape[0], probs.shape[1] + 1))
+    new_probs[:, :264] = probs.astype(int)
+    for i in range(probs.shape[0]):
+        if probs[i].max() == 0:
+            new_probs[i, -1] = 1
+
+    labels = labels
+
+    return f1_score(labels, new_probs > threshold, average="micro")
 
 
 def get_learning_rate(optimizer):

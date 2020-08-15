@@ -9,15 +9,18 @@ from transforms import (
     MelSpectrogram,
     SpecAugment,
     SpectToImage,
+    AddBackground,
+    VolumeOff
 )
 from args import args
 import numpy as np
 import torch
 
-
 train_audio_augmentation = albumentations.Compose(
     [
         IntRandomAudio(seconds=args.max_duration, always_apply=True),
+        #AddBackground(p=0.33),
+        VolumeOff(p=0.33),
         NoiseInjection(p=0.33),
         MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
         SpecAugment(p=0.33),
@@ -60,18 +63,18 @@ class BirdDataset:
             sound_array = np.array(sound.get_array_of_samples(), dtype=np.float32)
         except:
             print("my bad")
-            sound_array = np.zeros(
-                self.sample_rate * 5, dtype=np.float32
-            )
+            sound_array = np.zeros(self.sample_rate * 5, dtype=np.float32)
 
         return sound_array, args.sample_rate
 
     def load_npy(self, path):
         try:
-            return np.load(path.replace("mp3", "npy")).astype(np.float32), self.sample_rate
+            return (
+                np.load(path.replace("mp3", "npy")).astype(np.float32),
+                self.sample_rate,
+            )
         except:
-            return np.zeros(
-                self.sample_rate * 5, dtype=np.float32 ), self.sample_rate
+            return np.zeros(self.sample_rate * 5, dtype=np.float32), self.sample_rate
 
     def __getitem__(self, item):
 
@@ -83,7 +86,6 @@ class BirdDataset:
             0, torch.Tensor(self.ebird_label_secondary[item]).long(), 1
         )
         folder = self.folder[item]
-
 
         data = self.load_npy(f"{args.ROOT_PATH}/{folder}/{ebird_code}/{filename}")
         spect = self.aug(data=data)["data"]
