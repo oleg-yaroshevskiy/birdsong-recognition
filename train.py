@@ -29,8 +29,9 @@ random.seed(args.seed)
 train = pd.read_csv("../input/train.csv")
 train["folder"] = "train_audio"
 
-aux_train = pd.read_csv("../input/train_extended.csv")
-aux_train["folder"] = "xeno-carlo"
+if args.add_xeno:
+    aux_train = pd.read_csv("../input/train_extended.csv")
+    aux_train["folder"] = "xeno-carlo"
 
 test = pd.read_csv("../input/test.csv")
 submission = pd.read_csv("../input/sample_submission.csv")
@@ -44,10 +45,12 @@ train["ebird_label_secondary"] = train.secondary_labels.apply(
     lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
 )
 
-aux_train["ebird_label"] = train_le.transform(aux_train.ebird_code.values)
-aux_train["ebird_label_secondary"] = aux_train.secondary_labels.apply(
-    lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
-)
+if args.add_xeno:
+    aux_train["ebird_label"] = train_le.transform(aux_train.ebird_code.values)
+    aux_train["ebird_label_secondary"] = aux_train.secondary_labels.apply(
+        lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
+    )
+    
 test_samples = prepare_test(
     [
         "../input/test/BLKFR-10-CPL_20190611_093000.pt540.mp3",
