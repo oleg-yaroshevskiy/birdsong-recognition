@@ -50,7 +50,7 @@ if args.add_xeno:
     aux_train["ebird_label_secondary"] = aux_train.secondary_labels.apply(
         lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
     )
-    
+
 test_samples = prepare_test(
     [
         "../input/test/BLKFR-10-CPL_20190611_093000.pt540.mp3",
@@ -58,8 +58,8 @@ test_samples = prepare_test(
         #"../input/test/SSW49_20170520.wav",
         #"../input/test/SSW50_20170819.wav",
         "../input/test/SSW51_20170819.wav",
-        #"../input/test/SSW52_20170429.wav",
-        "../input/test/SSW53_20170513.wav",
+        "../input/test/SSW52_20170429.wav",
+        #"../input/test/SSW53_20170513.wav",
         "../input/test/SSW54_20170610.wav"
     ],
     pd.read_csv("../input/test/merged_summary.csv"),
