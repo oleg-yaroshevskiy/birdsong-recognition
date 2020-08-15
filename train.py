@@ -54,10 +54,10 @@ test_samples = prepare_test(
         "../input/test/ORANGE-7-CAP_20190606_093000.pt623.mp3",
         #"../input/test/SSW49_20170520.wav",
         #"../input/test/SSW50_20170819.wav",
-        #"../input/test/SSW51_20170819.wav",
+        "../input/test/SSW51_20170819.wav",
         #"../input/test/SSW52_20170429.wav",
-        #"../input/test/SSW53_20170513.wav",
-        #"../input/test/SSW54_20170610.wav"
+        "../input/test/SSW53_20170513.wav",
+        "../input/test/SSW54_20170610.wav"
     ],
     pd.read_csv("../input/test/merged_summary.csv"),
     train_le,
