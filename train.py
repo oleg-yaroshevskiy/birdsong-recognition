@@ -154,6 +154,7 @@ for fold, (t_idx, v_idx) in enumerate(
     )
 
     best_acc = 0
+    best_test = 0
 
     for epoch in range(args.epochs):
 
@@ -161,13 +162,18 @@ for fold, (t_idx, v_idx) in enumerate(
             train_loader, model, optimizer, scheduler_warmup, loss_fn, device, epoch
         )
         valid_loss, valid_acc = valid_fn(valid_loader, model, loss_fn, device, epoch)
-        _ = test_fn(model, loss_fn, device, test_samples, epoch)
+        test_f1 = test_fn(model, loss_fn, device, test_samples, epoch)
         print(f"Fold {fold} ** Epoch {epoch+1} **==>** Accuracy = {valid_acc:.4f}")
 
         if valid_acc > best_acc:
             torch.save(model.state_dict(), f"fold_{fold}.pth")
             wandb.save(f"fold_{fold}.pth")
             best_acc = valid_acc
+
+        if test_f1 > best_test:
+            torch.save(model.state_dict(), f"fold_{fold}_test.pth")
+            wandb.save(f"fold_{fold}_test.pth")
+            best_test = test_f1
 
         scheduler.step(valid_acc)
 
