@@ -221,4 +221,4 @@ def test_fn(model, loss_fn, device, samples, epoch):
         step=epoch,
     )
 
-    return None
+    return best_score
