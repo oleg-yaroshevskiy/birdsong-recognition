@@ -1,44 +1,84 @@
 import librosa
 import numpy as np
 import pandas as pd
+import albumentations
+from transforms import (
+    MelSpectrogram,
+    SpectToImage,
+)
 
 
-def load_test_batch(file_name, sr=32000):
+def get_test_samples(train_le, args):
+    summary_df = pd.read_csv("../input/test/merged_summary.csv")
+    transforms = albumentations.Compose(
+        [
+            MelSpectrogram(
+                parameters=args.melspectrogram_parameters, always_apply=True
+            ),
+            SpectToImage(always_apply=True),
+        ]
+    )
+
+    test_samples_1 = prepare_test(
+        [
+            "../input/test/BLKFR-10-CPL_20190611_093000.pt540.mp3",
+            "../input/test/ORANGE-7-CAP_20190606_093000.pt623.mp3",
+        ],
+        summary_df,
+        train_le,
+        args,
+        transforms,
+    )
+
+    test_samples_2 = prepare_test(
+        [
+            "../input/test/BLKFR-10-CPL_20190611_093000.pt540.mp3",
+            "../input/test/ORANGE-7-CAP_20190606_093000.pt623.mp3",
+            # "../input/test/SSW49_20170520.wav",
+            # "../input/test/SSW50_20170819.wav",
+            "../input/test/SSW51_20170819.wav",
+            "../input/test/SSW52_20170429.wav",
+            # "../input/test/SSW53_20170513.wav",
+            "../input/test/SSW54_20170610.wav",
+        ],
+        summary_df,
+        train_le,
+        args,
+        transforms,
+    )
+
+    return test_samples_1, test_samples_2
+
+
+def load_test_batch(file_name, sr=32000, duration=5):
     audio, sr = librosa.load(file_name, sr=sr)
-    chunks = len(audio) // (32000 * 5)
+    chunks = len(audio) // (sr * duration)
 
     audios = []
     for i in range(int(chunks) - 1):
-        audios.append(audio[i * 32000 * 5 : (i + 1) * 32000 * 5])
+        audios.append(audio[i * sr * duration : (i + 1) * sr * duration])
 
     return np.vstack(audios)
 
 
-def transform_test_batch(audios, params):
+def transform_test_batch(audios, transforms, sr=32000):
+    """ Stack signals to spectrgrams """
     specs = []
-    sr = 32000
 
     for sound in audios:
-        melspec = librosa.feature.melspectrogram(sound, sr=sr, **params)
-        melspec = librosa.power_to_db(melspec)
-        image = melspec.astype(np.float32)
-
-        delta = librosa.feature.delta(image)
-        accelerate = librosa.feature.delta(image, order=2)
-        image = np.stack([image, delta, accelerate], axis=0)
-        image = image.astype(np.float32) / 100.0
-        specs.append(np.expand_dims(image, 0))
+        spect = transforms(data=(sound, sr))["data"]
+        specs.append(np.expand_dims(spect, 0))
 
     return np.vstack(specs)
 
 
-def prepare_test(files, meta, le_encoder, melspectrogram_parameters, num_classes=264):
+def prepare_test(files, meta, le_encoder, args, transforms):
     inputs = []
     targets = []
     for file_ in files:
-        batch = load_test_batch(file_)
-        batch = transform_test_batch(batch, melspectrogram_parameters)
-        print(batch.shape)
+        batch = load_test_batch(file_, sr=args.sample_rate)
+        batch = transform_test_batch(batch, transforms, sr=args.sample_rate)
+
         test = meta[
             meta.filename_seconds.apply(lambda x: x.rsplit("_", 1)[0])
             == file_.split("/")[-1].split(".")[0]
@@ -52,7 +92,7 @@ def prepare_test(files, meta, le_encoder, melspectrogram_parameters, num_classes
             lambda x: transform(x.split()) if x is not None else []
         )
 
-        target = np.zeros((len(test), num_classes + 1))
+        target = np.zeros((len(test), args.num_classes + 1))
 
         for i, values in enumerate(test["labels"].values):
             if len(values) == 0:
@@ -60,7 +100,7 @@ def prepare_test(files, meta, le_encoder, melspectrogram_parameters, num_classes
             else:
                 target[i, values] = 1
 
-        print(file_, target[:, :num_classes].sum())
+        print("Test file:", file_, target[:, : args.num_classes].sum())
 
         inputs.append(batch)
         targets.append(target)

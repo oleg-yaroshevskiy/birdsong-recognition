@@ -2,7 +2,67 @@ import pretrainedmodels
 import torch
 from torch import nn
 import torch.nn.functional as F
-from args import args
+from transformers import get_constant_schedule_with_warmup
+from utils import get_learning_rate, isclose, Lookahead
+
+
+def get_model_loss(args):
+    if args.model == "cnn14_att":
+        model = Cnn14_DecisionLevelAtt(args.num_classes).cuda()
+        state = torch.load("Cnn14_DecisionLevelAtt_mAP=0.425.pth")["model"]
+        new_state_dict = OrderedDict()
+        for k, v in state.items():
+            if "att_block." in k and v.dim() != 0:
+                print(k)
+                new_state_dict[k] = v[: args.num_classes]
+            else:
+                new_state_dict[k] = v
+
+        model.load_state_dict(new_state_dict, strict=False)
+
+        loss_fn = PANNsLoss()
+    elif args.model == "b4_att":
+        from geffnet import tf_efficientnet_b4_ns
+        model = tf_efficientnet_b4_ns(
+            pretrained=True, num_classes=args.num_classes
+        ).cuda()
+        loss_fn = PANNsLoss()
+    else:
+        model = torch.hub.load(
+            "rwightman/gen-efficientnet-pytorch",
+            "tf_efficientnet_%s_ns" % args.model,
+            pretrained=True,
+            num_classes=args.num_classes,
+        ).cuda()
+
+        loss_fn = torch.nn.BCEWithLogitsLoss()
+
+    return model, loss_fn
+
+
+def get_optimizer_scheduler(model, args):
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=args.lr_base,
+        betas=args.betas,
+        eps=args.eps,
+        weight_decay=args.wd,
+    )
+    if args.opt_lookahead:
+        optimizer = Lookahead(optimizer)
+    scheduler_warmup = get_constant_schedule_with_warmup(
+        optimizer, num_warmup_steps=args.warmup
+    )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="max",
+        factor=args.lr_drop_rate,
+        patience=args.lr_patience,
+        threshold=0,
+        verbose=True,
+    )
+
+    return optimizer, scheduler_warmup, scheduler
 
 
 class ResNet18(nn.Module):

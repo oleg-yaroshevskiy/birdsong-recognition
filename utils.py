@@ -5,7 +5,17 @@ from torch.optim.optimizer import Optimizer, required
 from collections import defaultdict
 from itertools import chain
 import math
+import random
 from sklearn.metrics import f1_score
+
+
+def seed_all(args):
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
+        torch.cuda.manual_seed_all(args.seed)
+    np.random.seed(args.seed)
+    random.seed(args.seed)
 
 
 def to_list(tensor):
@@ -72,7 +82,7 @@ def get_f1_micro_nocall(logits, labels, threshold=None, num_classes=264):
 
     new_probs = np.zeros((probs.shape[0], num_classes + 1))
     new_probs[:, :num_classes] = probs.astype(int)
-    
+
     # nocall if all zeros
     for i in range(probs.shape[0]):
         if probs[i].max() == 0:

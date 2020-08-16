@@ -23,13 +23,23 @@ parser.add_argument("--eps", type=float, default=1e-8)
 parser.add_argument("--lr_patience", type=int, default=2)
 parser.add_argument("--lr_drop_rate", type=str, default="np.sqrt(0.1)")
 parser.add_argument("--opt_lookahead", type=str, default="False")
+parser.add_argument("--batch_accumulation", type=int, default=1)
+
+parser.add_argument("--smoothing", type=float, default=0.0)
+parser.add_argument("--mixup", type=float, default=0.0)
+parser.add_argument("--secondary", type=str, default="False")
 
 parser.add_argument("--add_xeno", type=str, default="False")
+
+parser.add_argument("--augm_bg_prob", type=float, default=0.0)
+parser.add_argument("--augm_vol_prob", type=float, default=0.0)
+parser.add_argument("--augm_noise_prob", type=float, default=0.33)
+parser.add_argument("--augm_spec_prob", type=float, default=0.33)
 
 args = parser.parse_args()
 print("Initial arguments", args)
 
-for arg in ["opt_lookahead", "add_xeno"]:
+for arg in ["opt_lookahead", "add_xeno", "secondary"]:
     args.__dict__[arg] = args.__dict__[arg] == "True"
 
 for arg in ["lr_base", "lr_drop_rate", "lr_stop"]:

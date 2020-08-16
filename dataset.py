@@ -10,36 +10,53 @@ from transforms import (
     SpecAugment,
     SpectToImage,
     AddBackground,
-    VolumeOff
+    VolumeOff,
 )
 from args import args
 import numpy as np
 import torch
 
-train_audio_augmentation = albumentations.Compose(
-    [
-        IntRandomAudio(seconds=args.max_duration, always_apply=True),
-        #AddBackground(p=0.33),
-        #VolumeOff(p=0.33),
-        NoiseInjection(p=0.33),
-        MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
-        SpecAugment(p=0.33),
-        SpectToImage(always_apply=True),
-    ]
-)
 
-valid_audio_augmentation = albumentations.Compose(
-    [
-        IntRandomAudio(seconds=args.max_duration, always_apply=True),
-        MelSpectrogram(parameters=args.melspectrogram_parameters, always_apply=True),
-        SpectToImage(always_apply=True),
+def get_train_augmentations(args):
+    train_audio_augmentation = [
+        IntRandomAudio(seconds=args.max_duration, always_apply=True)
     ]
-)
 
+    if args.augm_bg_prob > 0:
+        train_audio_augmentation.append(AddBackground(p=args.augm_bg_prob))
+
+    if args.augm_vol_prob > 0:
+        train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
+
+    if args.augm_noise_prob > 0:
+        train_audio_augmentation.append(NoiseInjection(p=args.augm_noise_prob))
+
+    train_audio_augmentation.extend(
+        [
+            MelSpectrogram(
+                parameters=args.melspectrogram_parameters, always_apply=True
+            ),
+            SpecAugment(p=args.augm_spec_prob),
+            SpectToImage(always_apply=True),
+        ]
+    )
+    return albumentations.Compose(train_audio_augmentation)
+
+
+def get_valid_augmentations(args):
+    return albumentations.Compose(
+        [
+            IntRandomAudio(seconds=args.max_duration, always_apply=True),
+            MelSpectrogram(
+                parameters=args.melspectrogram_parameters, always_apply=True
+            ),
+            SpectToImage(always_apply=True),
+        ]
+    )
 
 class BirdDataset:
-    def __init__(self, df, valid=False):
-
+    def __init__(self, df, args, valid=False):
+        self.args = args
         self.filename = df.filename.values
         self.ebird_label = df.ebird_label.values
         self.ebird_label_secondary = df.ebird_label_secondary.values
@@ -49,39 +66,33 @@ class BirdDataset:
         self.folder = df.folder.values
 
         if valid:
-            self.aug = valid_audio_augmentation
+            self.aug = get_valid_augmentations(args)
         else:
-            self.aug = train_audio_augmentation
+            self.aug = get_train_augmentations(args)
 
     def __len__(self):
         return len(self.filename)
 
-    def load_audio(self, path):
-        try:
-            sound = AudioSegment.from_mp3(path)
-            sound = sound.set_frame_rate(self.sample_rate)
-            sound_array = np.array(sound.get_array_of_samples(), dtype=np.float32)
-        except:
-            print("my bad")
-            sound_array = np.zeros(self.sample_rate * 5, dtype=np.float32)
-
-        return sound_array, args.sample_rate
-
     def load_npy(self, path):
         try:
             return (
-                np.load(path.replace("mp3", "npy")).astype(np.float32),
+                np.load(path.replace(".mp3", ".npy").replace(".wav", ".npy")).astype(
+                    np.float32
+                ),
                 self.sample_rate,
             )
         except:
-            return np.zeros(self.sample_rate * 5, dtype=np.float32), self.sample_rate
+            print("can't read file", path)
+            return (
+                np.zeros(self.sample_rate * self.args.max_duration, dtype=np.float32),
+                self.sample_rate,
+            )
 
     def __getitem__(self, item):
-
         filename = self.filename[item]
         ebird_code = self.ebird_code[item]
         ebird_label = self.ebird_label[item]
-        ebird_label_secondary = torch.zeros(264)
+        ebird_label_secondary = torch.zeros(self.args.num_classes)
         ebird_label_secondary.scatter_(
             0, torch.Tensor(self.ebird_label_secondary[item]).long(), 1
         )
@@ -97,38 +108,3 @@ class BirdDataset:
             "target": torch.tensor(target, dtype=torch.long),
             "target_secondary": ebird_label_secondary.long(),
         }
-
-
-class TrainDataset:
-    def __init__(self, path, df, sr=32000):
-        self.path = path
-        self.df = df
-        self.sr
-
-    def _read_audio_librosa(self, item):
-        audio, sr = librosa.load(
-            os.path.join(self.path, item.ebird_code, item.filename), sr=self.sr
-        )
-        return audio, sr
-
-    def _read_audio_pydub(self, item):
-        try:
-            sound = AudioSegment.from_mp3(
-                os.path.join(self.path, item.ebird_code, item.filename)
-            )
-            sound = sound.set_frame_rate(self.sr)
-            sound_array = np.array(sound.get_array_of_samples(), dtype=np.float32)
-        except:
-            print("my bad", item)
-            sound_array = np.zeros(self.sr * item.duration, dtype=np.float32)
-
-        return sound_array, item.sampling_rate
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, index):
-        item = self.df.iloc[index]
-        audio, sr = self._read_audio_librosa(item)
-
-        return audio

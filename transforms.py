@@ -11,17 +11,6 @@ import glob
 from multiprocessing import Manager
 
 
-def compute_stft(audio, window_size, hop_size, log=True, eps=1e-4):
-    f, t, s = scipy.signal.stft(audio, nperseg=window_size, noverlap=hop_size)
-
-    s = np.abs(s)
-
-    if log:
-        s = np.log(s + eps)
-
-    return s
-
-
 class AudioTransform(BasicTransform):
     """Transform for Audio task"""
 
@@ -191,18 +180,14 @@ class AddBackground(AudioTransform):
 
     def apply(self, data, **params):
         sound, sr = data
-        try:
-            alpha = np.random.rand()
-            bg = random.choice(self.background_audios)
-            bg = librosa.load("../input/env/audio/audio/" + bg, 32000)[0]
+        alpha = np.random.rand()
+        bg = random.choice(self.background_audios)
+        bg = librosa.load("../input/env/audio/audio/" + bg, 32000)[0]
 
-            sound = alpha * sound + bg * (1 - alpha)
-            #print("all good")
-        except Exception as e:
-            #print("shit happens", e)
-            "nothing"
+        sound = alpha * sound + bg * (1 - alpha)
 
         return sound, sr
+
 
 class VolumeOff(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):
