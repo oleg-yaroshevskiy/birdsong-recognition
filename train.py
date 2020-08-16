@@ -16,7 +16,6 @@ from loops import train_fn, valid_fn, test_fn
 import wandb
 import random
 from utils import get_learning_rate, isclose, seed_all
-from collections import OrderedDict
 from test import get_test_samples
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
