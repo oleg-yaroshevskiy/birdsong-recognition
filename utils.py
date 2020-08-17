@@ -71,14 +71,14 @@ def get_position_accuracy(logits, labels, threshold=None):
 
 
 def get_f1_micro(logits, labels, threshold=None):
-    probs = logits.sigmoid().cpu().data.numpy()
+    probs = logits.cpu().data.numpy()
     labels = labels.cpu().data.numpy()
 
     return f1_score(labels, probs > threshold, average="micro")
 
 
 def get_f1_micro_nocall(logits, labels, threshold=None, num_classes=264):
-    probs = logits.sigmoid().cpu().data.numpy() > threshold
+    probs = logits.cpu().data.numpy() > threshold
 
     new_probs = np.zeros((probs.shape[0], num_classes + 1))
     new_probs[:, :num_classes] = probs.astype(int)

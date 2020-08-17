@@ -49,7 +49,7 @@ args.__dict__["betas"] = (0.9, 0.999)
 args.__dict__["num_classes"] = 264
 args.__dict__["sample_rate"] = 32000
 args.__dict__["melspectrogram_parameters"] = {
-    "n_mels": 128,
+    "n_mels": 64,
     "fmin": 20,
     "fmax": 16000,
     "hop_length": 320,

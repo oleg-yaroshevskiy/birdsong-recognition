@@ -51,12 +51,21 @@ def get_test_samples(train_le, args):
 
 
 def load_test_batch(file_name, sr=32000, duration=5):
-    audio, sr = librosa.load(file_name, sr=sr)
+    try:
+        audio = np.load(file_name.replace(".mp3", ".npy").replace(".wav", ".npy"))
+    except:
+        audio, sr = librosa.load(file_name, sr=sr)
+        np.save(file_name.replace(".mp3", ".npy").replace(".wav", ".npy"), audio)
     chunks = len(audio) // (sr * duration)
 
     audios = []
     for i in range(int(chunks) - 1):
         audios.append(audio[i * sr * duration : (i + 1) * sr * duration])
+        # chunk = audio[i * sr * duration : (i + 3) * sr * duration]
+        # if len(chunk) < 3 * sr * duration:
+        #     print("padded")
+        #     chunk = np.pad(chunk, (0,  3 * sr * duration - len(chunk)), "constant")
+        # audios.append(chunk)
 
     return np.vstack(audios)
 
