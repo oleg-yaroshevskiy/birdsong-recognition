@@ -280,13 +280,13 @@ class RandomAudio(AudioTransform):
 class AddBackground(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):
         super(AddBackground, self).__init__(always_apply, p)
-        background_audios = np.load("../input/env/bg2.npy")
-        background_audios_duration = len(background_audios)
+        self.background_audios = np.load("../input/env/bg2.npy")
+        self.background_audios_duration = len(self.background_audios)
 
     def apply(self, data, **params):
         sound, sr = data
-        frame = np.random.randint(0, background_audios_duration - len(sound))
-        bg = background_audios[frame: frame + len(sound)]
+        frame = np.random.randint(0, self.background_audios_duration - len(sound))
+        bg = self.background_audios[frame: frame + len(sound)]
         noise_level = np.random.rand()
 
         sound = sound + bg * noise_level

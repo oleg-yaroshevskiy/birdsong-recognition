@@ -9,13 +9,15 @@ from collections import OrderedDict
 
 def get_model_loss(args):
     if args.model == "cnn14_att":
-        model = Cnn14_DecisionLevelAtt(args.num_classes).cuda()
+        model = Cnn14_DecisionLevelAtt(args.num_classes, args.nmels).cuda()
         state = torch.load("Cnn14_DecisionLevelAtt_mAP=0.425.pth")["model"]
         new_state_dict = OrderedDict()
         for k, v in state.items():
-            if "att_block." in k and v.dim() != 0:
+            if ("att_block." in k) and v.dim() != 0:
                 print(k)
                 new_state_dict[k] = v[: args.num_classes]
+            elif "bn0" in k and v.dim() != 0:
+                new_state_dict[k] = torch.cat([v,v])
             else:
                 new_state_dict[k] = v
 
@@ -236,11 +238,11 @@ def pad_framewise_output(framewise_output, frames_num):
 
 
 class Cnn14_DecisionLevelAtt(nn.Module):
-    def __init__(self, classes_num):
+    def __init__(self, classes_num, input_size=64):
         super(Cnn14_DecisionLevelAtt, self).__init__()
         self.interpolate_ratio = 32  # Downsampled ratio
-
-        self.bn0 = nn.BatchNorm2d(64)
+        
+        self.bn0 = nn.BatchNorm2d(input_size)
 
         self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
