@@ -369,7 +369,7 @@ class GenEfficientNet(nn.Module):
 
         self.fc1 = nn.Linear(num_features, num_features, bias=True)
         self.att_block = AttBlock(num_features, num_classes, activation="sigmoid")
-        self.interpolate_ratio = 32
+        self.interpolate_ratio = 31
         # self.classifier = nn.Linear(num_features, num_classes)
 
         for n, m in self.named_modules():
@@ -405,7 +405,7 @@ class GenEfficientNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # frames_num = x.shape[3]
+        frames_num = x.shape[3]
         x = self.features(x)
         # torch.Size([32, 1792, 4, 16])
 
@@ -429,16 +429,16 @@ class GenEfficientNet(nn.Module):
         x = x.transpose(1, 2)
         x = F.dropout(x, p=0.2)
         (clipwise_output, _, segmentwise_output) = self.att_block(x)
-        # segmentwise_output = segmentwise_output.transpose(1, 2)
+        segmentwise_output = segmentwise_output.transpose(1, 2)
 
         # Get framewise output
-        # framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
-        # framewise_output = pad_framewise_output(framewise_output, frames_num)
+        framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
+        framewise_output = pad_framewise_output(framewise_output, frames_num)
 
-        # output_dict = {'framewise_output': framewise_output,
-        #     'clipwise_output': clipwise_output}
+        output_dict = {'framewise_output': framewise_output,
+            'clipwise_output': clipwise_output}
 
-        return clipwise_output
+        return clipwise_output, segmentwise_output
 
 
 def _create_model(model_kwargs, variant, pretrained=False):
