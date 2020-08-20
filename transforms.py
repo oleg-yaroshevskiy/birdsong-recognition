@@ -1,4 +1,5 @@
 import scipy
+import scipy.signal
 import librosa
 import numpy as np
 import tqdm
@@ -15,6 +16,7 @@ from numpy.fft import irfft, rfftfreq
 from numpy.random import normal
 from numpy import sum as npsum
 
+import cv2
 
 def powerlaw_psd_gaussian(exponent, size, fmin=0):
     """Gaussian (1/f)**beta noise.
@@ -314,11 +316,30 @@ class MelSpectrogram(AudioTransform):
         sound, sr = data
 
         melspec = librosa.feature.melspectrogram(sound, sr=sr, **self.parameters)
-        melspec = librosa.power_to_db(melspec)
+        melspec = np.log(melspec + 1e-8)
+        #melspec = librosa.power_to_db(melspec)
         melspec = melspec.astype(np.float32)
 
         return melspec, sr
 
+
+class Stft(AudioTransform):
+    def __init__(self, parameters={}, always_apply=False, p=0.5):
+        super(Stft, self).__init__(always_apply, p)
+
+        self.parameters = parameters
+
+    def apply(self, data, **params):
+        sound, sr = data
+
+        _, _, stft = scipy.signal.stft(sound, nperseg=512, noverlap=192)
+        melspec = np.log(np.abs(stft) + 1e-8)
+        melspec = cv2.resize(melspec[1:], (melspec.shape[1], 64))
+        melspec = melspec.astype(np.float32)
+
+        #print(melspec.min(), melspec.max())
+
+        return melspec, sr
 
 class SpecAugment(AudioTransform):
     def __init__(
@@ -372,7 +393,6 @@ class SpecAugment(AudioTransform):
             spec[:, t0 : t0 + num_frames_to_mask] = value
 
         return spec
-
 
 class SpectToImage1c(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):

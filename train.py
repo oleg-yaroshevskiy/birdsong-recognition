@@ -17,10 +17,16 @@ import wandb
 import random
 from utils import get_learning_rate, isclose, seed_all
 from test import get_test_samples
+import os
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 seed_all(args)
+
+run_id = "{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else "")
+model_directory = f"../models/{run_id}/"
+if not os.path.exists(model_directory):
+    os.makedirs(model_directory)
 
 train = pd.read_csv("../input/train.csv")
 # train_nocall = pd.read_csv("../input/env/nocall.csv")
@@ -55,8 +61,8 @@ for fold, (t_idx, v_idx) in enumerate(
     wandb.init(
         config=args,
         project="birdsong",
-        name="{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else ""),
-        id="{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else ""),
+        name=run_id,
+        id=run_id,
         reinit=True,
     )
 
@@ -117,18 +123,18 @@ for fold, (t_idx, v_idx) in enumerate(
 
         # SAVE MODELS
         if valid_acc > best_acc:
-            torch.save(model.state_dict(), f"../models/fold_{fold}.pth")
-            wandb.save(f"../models/fold_{fold}.pth")
+            torch.save(model.state_dict(), f"{model_directory}/fold_{fold}.pth")
+            wandb.save(f"{model_directory}/fold_{fold}.pth")
             best_acc = valid_acc
 
         if test_f1_1 > best_test_1:
-            torch.save(model.state_dict(), f"../models/fold_{fold}_test_1.pth")
-            wandb.save(f"../models/fold_{fold}_test_1.pth")
+            torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_1.pth")
+            wandb.save(f"{model_directory}/fold_{fold}_test_1.pth")
             best_test_1 = test_f1_1
 
         if test_f1_2 > best_test_2:
-            torch.save(model.state_dict(), f"../models/fold_{fold}_test_2.pth")
-            wandb.save(f"../models/fold_{fold}_test_2.pth")
+            torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2.pth")
+            wandb.save(f"{model_directory}/fold_{fold}_test_2.pth")
             best_test_2 = test_f1_2
 
         scheduler.step(valid_acc)

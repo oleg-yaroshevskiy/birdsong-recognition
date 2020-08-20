@@ -7,6 +7,7 @@ from transforms import (
     RandomAudio,
     NoiseInjection,
     MelSpectrogram,
+    Stft,
     SpecAugment,
     SpectToImage1c,
     SpectToImage3c,
