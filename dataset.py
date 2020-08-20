@@ -56,6 +56,9 @@ def get_train_augmentations(args):
 
 
 def get_valid_augmentations(args):
+    SpectToImage = (
+        SpectToImage1c if "att" in args.model else SpectToImage3c
+    )
     return albumentations.Compose(
         [
             IntRandomAudio(seconds=args.max_duration, always_apply=True),
