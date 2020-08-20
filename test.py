@@ -4,11 +4,15 @@ import pandas as pd
 import albumentations
 from transforms import (
     MelSpectrogram,
-    SpectToImage,
+    SpectToImage1c,
+    SpectToImage3c,
 )
 
 
 def get_test_samples(train_le, args):
+    SpectToImage = (
+        SpectToImage1c if "att" in args.model else SpectToImage3c
+    )
     summary_df = pd.read_csv("../input/test/merged_summary.csv")
     transforms = albumentations.Compose(
         [

@@ -11,6 +11,12 @@ import wandb
 import numpy as np
 
 
+def mo_(output):
+    if type(output) == tuple:
+        return output[0]
+    else:
+        return output
+
 def onehot(targets, targets_secondary, num_classes, smoothing=0.0):
     size = targets.size(0)
     one_hot = torch.zeros(size, num_classes)
@@ -60,7 +66,7 @@ def train_fn(
             half = spect.size(0) // 2
             spect, targets = mixup(spect, targets, args.mixup)
 
-        outputs = model(spect)
+        outputs = mo_(model(spect))
         loss = loss_fn(outputs, targets)
         loss.backward()
 
@@ -111,7 +117,7 @@ def valid_fn(valid_loader, model, loss_fn, device, epoch, args):
             spect = d["spect"].to(device)
             targets = d["target"].to(device)
 
-            outputs = model(spect)
+            outputs = mo_(model(spect))
 
             loss = loss_fn(
                 outputs,
@@ -189,7 +195,7 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
         for batch in torch.utils.data.DataLoader(
             samples["spect"], batch_size=16, shuffle=False
         ):
-            output = model(batch.to(device))
+            output = mo_(model(batch.to(device)))
             outputs.append(output)
 
         outputs = torch.cat(outputs, dim=0)

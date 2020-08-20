@@ -374,9 +374,19 @@ class SpecAugment(AudioTransform):
         return spec
 
 
-class SpectToImage(AudioTransform):
+class SpectToImage1c(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):
-        super(SpectToImage, self).__init__(always_apply, p)
+        super(SpectToImage1c, self).__init__(always_apply, p)
+
+    def apply(self, data, **params):
+        image, sr = data
+        image = image.astype(np.float32) / 100.0
+
+        return np.expand_dims(image, 0)
+
+class SpectToImage3c(AudioTransform):
+    def __init__(self, always_apply=False, p=0.5):
+        super(SpectToImage3c, self).__init__(always_apply, p)
 
     def apply(self, data, **params):
         image, sr = data
@@ -385,4 +395,4 @@ class SpectToImage(AudioTransform):
         image = np.stack([image, delta, accelerate], axis=0)
         image = image.astype(np.float32) / 100.0
 
-        return image  # np.expand_dims(image, 0)
+        return image

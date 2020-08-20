@@ -8,7 +8,8 @@ from transforms import (
     NoiseInjection,
     MelSpectrogram,
     SpecAugment,
-    SpectToImage,
+    SpectToImage1c,
+    SpectToImage3c,
     AddBackground,
     VolumeOff,
     PinksNoiseInjection
@@ -19,6 +20,9 @@ import torch
 
 
 def get_train_augmentations(args):
+    SpectToImage = (
+        SpectToImage1c if "att" in args.model else SpectToImage3c
+    )
     train_audio_augmentation = [
         IntRandomAudio(seconds=args.max_duration, always_apply=True)
     ]
