@@ -25,19 +25,21 @@ parser.add_argument("--lr_drop_rate", type=str, default="np.sqrt(0.1)")
 parser.add_argument("--opt_lookahead", type=str, default="False")
 parser.add_argument("--batch_accumulation", type=int, default=1)
 
+parser.add_argument("--nmels", type=int, default=64)
+
 parser.add_argument("--smoothing", type=float, default=0.0)
 parser.add_argument("--mixup", type=float, default=0.0)
 parser.add_argument("--secondary", type=str, default="False")
 
 parser.add_argument("--add_xeno", type=str, default="False")
 
-parser.add_argument("--augm_bg_prob", type=float, default=0.0)
+parser.add_argument("--augm_noise_or_bg", type=float, default=0.33)
+parser.add_argument("--augm_bg_prob", type=float, default=0.)
 parser.add_argument("--augm_vol_prob", type=float, default=0.0)
-parser.add_argument("--augm_noise_prob", type=float, default=0.33)
+parser.add_argument("--augm_noise_prob", type=float, default=1.)
 parser.add_argument("--augm_spec_prob", type=float, default=0.33)
 
 args = parser.parse_args()
-print("Initial arguments", args)
 
 for arg in ["opt_lookahead", "add_xeno", "secondary"]:
     args.__dict__[arg] = args.__dict__[arg] == "True"
@@ -49,7 +51,7 @@ args.__dict__["betas"] = (0.9, 0.999)
 args.__dict__["num_classes"] = 264
 args.__dict__["sample_rate"] = 32000
 args.__dict__["melspectrogram_parameters"] = {
-    "n_mels": 64,
+    "n_mels": args.nmels,
     "fmin": 20,
     "fmax": 16000,
     "hop_length": 320,
@@ -57,3 +59,5 @@ args.__dict__["melspectrogram_parameters"] = {
     # default hop_length=512 n_fft=2048 n_mels=128
     # TODO: re-run b4 with those
 }
+
+print("Initial arguments", args)

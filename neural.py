@@ -37,6 +37,7 @@ def get_model_loss(args):
         ).cuda()
 
         loss_fn = torch.nn.BCEWithLogitsLoss()
+        args.__dict__["sigmoid"] = True
 
     return model, loss_fn
 
@@ -239,7 +240,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         super(Cnn14_DecisionLevelAtt, self).__init__()
         self.interpolate_ratio = 32  # Downsampled ratio
 
-        self.bn0_ = nn.BatchNorm2d(128)
+        self.bn0 = nn.BatchNorm2d(64)
 
         self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
@@ -254,7 +255,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         self.init_weight()
 
     def init_weight(self):
-        init_bn(self.bn0_)
+        init_bn(self.bn0)
         init_layer(self.fc1)
 
     def forward(self, x):
@@ -263,7 +264,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         frames_num = x.shape[2]
 
         x = x.transpose(1, 3)
-        x = self.bn0_(x)
+        x = self.bn0(x)
         x = x.transpose(1, 3)
 
         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
@@ -301,7 +302,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         }
 
         # print(clipwise_output.min(), clipwise_output.max())
-        return clipwise_output
+        return clipwise_output, framewise_output
 
 
 class PANNsLoss(nn.Module):
