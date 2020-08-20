@@ -23,8 +23,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 seed_all(args)
 
-run_id = "{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else "")
-model_directory = f"../models/{run_id}/"
+model_directory = "{}{}".format(args.model, "_" + args.name if args.name else "")
+model_directory = f"../models/{model_directory}/"
 if not os.path.exists(model_directory):
     os.makedirs(model_directory)
 
@@ -58,6 +58,7 @@ kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
     kfold.split(train.filename.values, train.ebird_code.values)
 ):
+    run_id = "{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else "")
     wandb.init(
         config=args,
         project="birdsong",
