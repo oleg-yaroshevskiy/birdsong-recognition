@@ -132,6 +132,8 @@ def valid_fn(valid_loader, model, loss_fn, device, epoch, args):
             targets_secondary_all.append(d["target_secondary"].to(device))
 
     outputs_all = torch.cat(outputs_all, dim=0)
+    if args.sigmoid:
+        outputs_all = outputs_all.sigmoid()
     targets_all = torch.cat(targets_all, dim=0)
     targets_secondary_all = torch.cat(targets_secondary_all, dim=0)
 
@@ -178,7 +180,7 @@ def valid_fn(valid_loader, model, loss_fn, device, epoch, args):
     return total_loss.avg, accuracies.avg
 
 
-def test_fn(model, loss_fn, device, samples, epoch, key):
+def test_fn(model, loss_fn, device, samples, epoch, key, args):
     model.eval()
     scores = []
 
@@ -192,13 +194,16 @@ def test_fn(model, loss_fn, device, samples, epoch, key):
 
         outputs = torch.cat(outputs, dim=0)
 
-    loss = loss_fn(
-        outputs,
-        torch.from_numpy(samples["targets"]).to(device)[:, : outputs.size(1)].float(),
-    )
+    # loss = loss_fn(
+    #     outputs,
+    #     torch.from_numpy(samples["targets"]).to(device)[:, : outputs.size(1)].float(),
+    # )
+    if args.sigmoid:
+        outputs = outputs.sigmoid()
 
     best_score, best_threshold = 0.0, 0.0
     scores_by_t = []
+
     for t in np.linspace(0.05, 0.95, 19):
         score = get_f1_micro_nocall(outputs, samples["targets"], t)
         if score > best_score:
@@ -213,7 +218,7 @@ def test_fn(model, loss_fn, device, samples, epoch, key):
         {
             f"test f1 (best){key}": best_score,
             f"test threshold (best){key}": best_threshold,
-            f"test loss{key}": loss.item(),
+            #f"test loss{key}": loss.item(),
         },
         step=epoch,
     )

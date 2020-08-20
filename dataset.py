@@ -11,6 +11,7 @@ from transforms import (
     SpectToImage,
     AddBackground,
     VolumeOff,
+    PinksNoiseInjection
 )
 from args import args
 import numpy as np
@@ -22,14 +23,21 @@ def get_train_augmentations(args):
         IntRandomAudio(seconds=args.max_duration, always_apply=True)
     ]
 
-    if args.augm_bg_prob > 0:
-        train_audio_augmentation.append(AddBackground(p=args.augm_bg_prob))
-
     if args.augm_vol_prob > 0:
         train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
 
-    if args.augm_noise_prob > 0:
-        train_audio_augmentation.append(NoiseInjection(p=args.augm_noise_prob))
+    # if args.augm_bg_prob > 0:
+    #     train_audio_augmentation.append(AddBackground(p=args.augm_bg_prob))
+   
+
+    if args.augm_noise_or_bg > 0:
+        train_audio_augmentation.append(
+            albumentations.core.composition.OneOf([
+                AddBackground(p=args.augm_bg_prob),
+                PinksNoiseInjection(p=args.augm_noise_prob)
+            ],
+            p=args.augm_noise_or_bg)
+        )
 
     train_audio_augmentation.extend(
         [

@@ -97,7 +97,6 @@ for fold, (t_idx, v_idx) in enumerate(
     best_test_2 = 0
 
     for epoch in range(args.epochs):
-
         train_loss = train_fn(
             train_loader,
             model,
@@ -111,8 +110,8 @@ for fold, (t_idx, v_idx) in enumerate(
         valid_loss, valid_acc = valid_fn(
             valid_loader, model, loss_fn, device, epoch, args
         )
-        test_f1_1 = test_fn(model, loss_fn, device, test_samples_1, epoch, "")
-        test_f1_2 = test_fn(model, loss_fn, device, test_samples_2, epoch, " extended")
+        test_f1_1 = test_fn(model, loss_fn, device, test_samples_1, epoch, "", args)
+        test_f1_2 = test_fn(model, loss_fn, device, test_samples_2, epoch, " extended", args)
 
         print(f"Fold {fold} ** Epoch {epoch+1} **==>** Accuracy = {valid_acc:.4f}")
 
