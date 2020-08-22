@@ -294,7 +294,7 @@ class RandomAudio(AudioTransform):
 class AddBackground(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):
         super(AddBackground, self).__init__(always_apply, p)
-        self.background_audios = np.load("../input/env/bg2.npy")
+        self.background_audios = np.load("../input/env/bg2.5.npy")
         self.background_audios_duration = len(self.background_audios)
 
     def apply(self, data, **params):

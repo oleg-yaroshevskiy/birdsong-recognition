@@ -32,7 +32,7 @@ parser.add_argument("--mixup", type=float, default=0.0)
 parser.add_argument("--secondary", type=str, default="True")
 parser.add_argument("--sigmoid", type=str, default="False")
 
-parser.add_argument("--add_xeno", type=str, default="True")
+parser.add_argument("--add_xeno", type=str, default="False")
 
 parser.add_argument("--augm_noise_or_bg", type=float, default=0.66)
 parser.add_argument("--augm_bg_prob", type=float, default=0.5)

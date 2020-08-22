@@ -11,7 +11,7 @@ from transforms import (
 
 def get_test_samples(train_le, args):
     SpectToImage = (
-        SpectToImage1c if "att" in args.model else SpectToImage3c
+        SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
     )
     summary_df = pd.read_csv("../input/test/merged_summary.csv")
     transforms = albumentations.Compose(

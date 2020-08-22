@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from transformers import get_constant_schedule_with_warmup
 from utils import get_learning_rate, isclose, Lookahead
 from collections import OrderedDict
-
+import torchlibrosa
 
 def get_model_loss(args):
     if args.model == "cnn14_att":
@@ -16,7 +16,7 @@ def get_model_loss(args):
             if ("att_block." in k) and v.dim() != 0:
                 print(k)
                 new_state_dict[k] = v[: args.num_classes]
-            elif "bn0" in k and v.dim() != 0:
+            elif "bn0" in k and v.dim() != 0 and args.nmels == 128:
                 new_state_dict[k] = torch.cat([v,v])
             else:
                 new_state_dict[k] = v
@@ -236,6 +236,26 @@ def pad_framewise_output(framewise_output, frames_num):
 
     return output
 
+class LogMel(nn.Module):
+    def __init__(self, nmels):
+        super(LogMel, self).__init__()
+        self.spectrogram_extractor = torchlibrosa.stft.Spectrogram(n_fft=1024, hop_length=320)
+        self.logmel_extractor = torchlibrosa.stft.LogmelFilterBank(
+            sr=32000, 
+            n_fft=1024, 
+            n_mels=nmels, 
+            top_db=None, 
+            fmin=20, 
+            fmax=16000, 
+            is_log=False)
+
+    def forward(self, sound):
+        spec = self.spectrogram_extractor(sound)
+        spec = self.logmel_extractor(spec)
+        spec = torch.log(1e-8 + spec)
+
+        return spec / 100.
+    
 
 class Cnn14_DecisionLevelAtt(nn.Module):
     def __init__(self, classes_num, input_size=64):
@@ -256,13 +276,15 @@ class Cnn14_DecisionLevelAtt(nn.Module):
 
         self.init_weight()
 
+        #self.logmel = LogMel(input_size)
+
     def init_weight(self):
         init_bn(self.bn0)
         init_layer(self.fc1)
 
     def forward(self, x):
         x = x.transpose(2, 3)
-        # print(x.shape)
+
         frames_num = x.shape[2]
 
         x = x.transpose(1, 3)
@@ -286,11 +308,11 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
-        x = F.dropout(x, p=0.5)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = x.transpose(1, 2)
         x = F.relu_(self.fc1(x))
         x = x.transpose(1, 2)
-        x = F.dropout(x, p=0.5)
+        x = F.dropout(x, p=0.5, training=self.training)
         (clipwise_output, _, segmentwise_output) = self.att_block(x)
         segmentwise_output = segmentwise_output.transpose(1, 2)
 

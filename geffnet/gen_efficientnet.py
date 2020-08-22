@@ -407,36 +407,26 @@ class GenEfficientNet(nn.Module):
     def forward(self, x):
         frames_num = x.shape[3]
         x = self.features(x)
-        # torch.Size([32, 1792, 4, 16])
 
-        # self.fc1 = nn.Linear(2048, 2048, bias=True)
-        # self.att_block = AttBlock(2048, classes_num, activation='sigmoid')
-
-        # print(x.shape)
-        # x = self.global_pool(x)
-        # x = x.flatten(1)
-        # if self.drop_rate > 0.:
-        #     x = F.dropout(x, p=self.drop_rate, training=self.training)
-        # return self.classifier(x)
         x = x.transpose(2, 3)
         x = torch.mean(x, dim=3)
         x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
         x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
         x = x1 + x2
-        x = F.dropout(x, p=0.2)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = x.transpose(1, 2)
         x = F.relu_(self.fc1(x))
         x = x.transpose(1, 2)
-        x = F.dropout(x, p=0.2)
+        x = F.dropout(x, p=0.5, training=self.training)
         (clipwise_output, _, segmentwise_output) = self.att_block(x)
-        segmentwise_output = segmentwise_output.transpose(1, 2)
+        # segmentwise_output = segmentwise_output.transpose(1, 2)
 
-        # Get framewise output
-        framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
-        framewise_output = pad_framewise_output(framewise_output, frames_num)
+        # # Get framewise output
+        # framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
+        # framewise_output = pad_framewise_output(framewise_output, frames_num)
 
-        output_dict = {'framewise_output': framewise_output,
-            'clipwise_output': clipwise_output}
+        # output_dict = {'framewise_output': framewise_output,
+        #     'clipwise_output': clipwise_output}
 
         return clipwise_output, segmentwise_output
 
