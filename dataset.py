@@ -14,7 +14,7 @@ from transforms import (
     AddBackground,
     VolumeOff,
     PinksNoiseInjection,
-    LowFrequencyMask
+    LowFrequencyMask,
 )
 from args import args
 import numpy as np
@@ -22,9 +22,7 @@ import torch
 
 
 def get_train_augmentations(args):
-    SpectToImage = (
-        SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
-    )
+    SpectToImage = SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
     train_audio_augmentation = [
         IntRandomAudio(seconds=args.max_duration, always_apply=True)
     ]
@@ -32,44 +30,44 @@ def get_train_augmentations(args):
     if args.augm_vol_prob > 0:
         train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
 
-
     if args.augm_noise_or_bg > 0:
         train_audio_augmentation.append(
-            albumentations.core.composition.OneOf([
-                AddBackground(p=args.augm_bg_prob),
-                PinksNoiseInjection(p=args.augm_noise_prob)
-            ],
-            p=args.augm_noise_or_bg)
+            albumentations.core.composition.OneOf(
+                [
+                    AddBackground(p=args.augm_bg_prob),
+                    PinksNoiseInjection(p=args.augm_noise_prob),
+                ],
+                p=args.augm_noise_or_bg,
+            )
         )
 
     if args.augm_low_pass > 0:
         train_audio_augmentation.append(LowFrequencyMask(p=0.75))
 
-    train_audio_augmentation.extend(
-        [
-            MelSpectrogram(
-                parameters=args.melspectrogram_parameters, always_apply=True
-            ),
-            SpecAugment(p=args.augm_spec_prob),
-            SpectToImage(always_apply=True),
-        ]
-    )
+    # train_audio_augmentation.extend(
+    #     [
+    #         MelSpectrogram(
+    #             parameters=args.melspectrogram_parameters, always_apply=True
+    #         ),
+    #         SpecAugment(p=args.augm_spec_prob),
+    #         SpectToImage(always_apply=True),
+    #     ]
+    # )
     return albumentations.Compose(train_audio_augmentation)
 
 
 def get_valid_augmentations(args):
-    SpectToImage = (
-        SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
-    )
+    SpectToImage = SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
     return albumentations.Compose(
         [
             IntRandomAudio(seconds=args.max_duration, always_apply=True),
-            MelSpectrogram(
-                parameters=args.melspectrogram_parameters, always_apply=True
-            ),
-            SpectToImage(always_apply=True),
+            # MelSpectrogram(
+            #     parameters=args.melspectrogram_parameters, always_apply=True
+            # ),
+            # SpectToImage(always_apply=True),
         ]
     )
+
 
 class BirdDataset:
     def __init__(self, df, args, valid=False):
@@ -116,7 +114,7 @@ class BirdDataset:
         folder = self.folder[item]
 
         data = self.load_npy(f"{args.ROOT_PATH}/{folder}/{ebird_code}/{filename}")
-        spect = self.aug(data=data)["data"]
+        spect, _ = self.aug(data=data)["data"]
 
         target = ebird_label
 

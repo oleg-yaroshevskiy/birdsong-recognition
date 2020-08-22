@@ -24,13 +24,15 @@ from scipy.signal import butter, lfilter, freqz
 def butter_lowpass(cutoff, fs, order=5):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    b, a = butter(order, normal_cutoff, btype="low", analog=False)
     return b, a
+
 
 def butter_lowpass_filter(data, cutoff=1, fs=30.0, order=5):
     b, a = butter_lowpass(cutoff, fs, order=order)
     y = lfilter(b, a, data)
     return y
+
 
 def powerlaw_psd_gaussian(exponent, size, fmin=0):
     """Gaussian (1/f)**beta noise.
@@ -67,58 +69,59 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0):
     >>> import colorednoise as cn
     >>> y = cn.powerlaw_psd_gaussian(1, 5)
     """
-    
+
     # Make sure size is a list so we can iterate it and assign to it.
     try:
         size = list(size)
     except TypeError:
         size = [size]
-    
+
     # The number of samples in each time series
     samples = size[-1]
-    
+
     # Calculate Frequencies (we asume a sample rate of one)
     # Use fft functions for real output (-> hermitian spectrum)
     f = rfftfreq(samples)
-    
+
     # Build scaling factors for all frequencies
     s_scale = f
-    fmin = max(fmin, 1./samples) # Low frequency cutoff
-    ix   = npsum(s_scale < fmin)   # Index of the cutoff
+    fmin = max(fmin, 1.0 / samples)  # Low frequency cutoff
+    ix = npsum(s_scale < fmin)  # Index of the cutoff
     if ix and ix < len(s_scale):
         s_scale[:ix] = s_scale[ix]
-    s_scale = s_scale**(-exponent/2.)
-    
+    s_scale = s_scale ** (-exponent / 2.0)
+
     # Calculate theoretical output standard deviation from scaling
-    w      = s_scale[1:].copy()
-    w[-1] *= (1 + (samples % 2)) / 2. # correct f = +-0.5
-    sigma = 2 * sqrt(npsum(w**2)) / samples
-    
+    w = s_scale[1:].copy()
+    w[-1] *= (1 + (samples % 2)) / 2.0  # correct f = +-0.5
+    sigma = 2 * sqrt(npsum(w ** 2)) / samples
+
     # Adjust size to generate one Fourier component per frequency
     size[-1] = len(f)
 
     # Add empty dimension(s) to broadcast s_scale along last
     # dimension of generated random power + phase (below)
     dims_to_add = len(size) - 1
-    s_scale     = s_scale[(newaxis,) * dims_to_add + (Ellipsis,)]
-    
+    s_scale = s_scale[(newaxis,) * dims_to_add + (Ellipsis,)]
+
     # Generate scaled random power + phase
     sr = normal(scale=s_scale, size=size)
     si = normal(scale=s_scale, size=size)
-    
+
     # If the signal length is even, frequencies +/- 0.5 are equal
     # so the coefficient must be real.
-    if not (samples % 2): si[...,-1] = 0
-    
+    if not (samples % 2):
+        si[..., -1] = 0
+
     # Regardless of signal length, the DC component must be real
-    si[...,0] = 0
-    
+    si[..., 0] = 0
+
     # Combine power + corrected phase to Fourier components
-    s  = sr + 1J * si
-    
+    s = sr + 1j * si
+
     # Transform to real time series & scale to unit variance
     y = irfft(s, n=samples, axis=-1) / sigma
-    
+
     return y
 
 
@@ -155,6 +158,7 @@ class NoiseInjection(AudioTransform):
 
         return augmented_sound, sr
 
+
 class PinksNoiseInjection(AudioTransform):
     """It simply add some random value into data by using numpy"""
 
@@ -167,13 +171,13 @@ class PinksNoiseInjection(AudioTransform):
     def apply(self, data, **params):
         sound, sr = data
 
-        idx = np.random.randint(0, 360 *32000 - len(sound))
+        idx = np.random.randint(0, 360 * 32000 - len(sound))
         noise_level = np.random.rand()
 
         if np.random.rand() < 0.5:
-            noise = self.pink_noise[idx:idx+len(sound)]
+            noise = self.pink_noise[idx : idx + len(sound)]
         else:
-            noise = self.brown_noise[idx:idx+len(sound)]
+            noise = self.brown_noise[idx : idx + len(sound)]
 
         augmented_sound = sound + noise_level * noise
         # Cast back to same data type
@@ -300,7 +304,7 @@ class AddBackground(AudioTransform):
     def apply(self, data, **params):
         sound, sr = data
         frame = np.random.randint(0, self.background_audios_duration - len(sound))
-        bg = self.background_audios[frame: frame + len(sound)]
+        bg = self.background_audios[frame : frame + len(sound)]
         noise_level = np.random.rand()
 
         sound = sound + bg * noise_level
@@ -331,7 +335,7 @@ class MelSpectrogram(AudioTransform):
 
         melspec = librosa.feature.melspectrogram(sound, sr=sr, **self.parameters)
         melspec = np.log(melspec + 1e-8)
-        #melspec = librosa.power_to_db(melspec)
+        # melspec = librosa.power_to_db(melspec)
         melspec = melspec.astype(np.float32)
 
         return melspec, sr
@@ -351,9 +355,10 @@ class Stft(AudioTransform):
         melspec = cv2.resize(melspec[1:], (melspec.shape[1], 64))
         melspec = melspec.astype(np.float32)
 
-        #print(melspec.min(), melspec.max())
+        # print(melspec.min(), melspec.max())
 
         return melspec, sr
+
 
 class SpecAugment(AudioTransform):
     def __init__(
@@ -408,6 +413,7 @@ class SpecAugment(AudioTransform):
 
         return spec
 
+
 class SpectToImage1c(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):
         super(SpectToImage1c, self).__init__(always_apply, p)
@@ -417,6 +423,7 @@ class SpectToImage1c(AudioTransform):
         image = image.astype(np.float32) / 100.0
 
         return np.expand_dims(image, 0)
+
 
 class SpectToImage3c(AudioTransform):
     def __init__(self, always_apply=False, p=0.5):
@@ -434,20 +441,16 @@ class SpectToImage3c(AudioTransform):
 
 class LowFrequencyMask(AudioTransform):
     def __init__(
-        self,
-        p: int = 0.5,
-        always_apply = False,
-        max_cutoff = 6000,
-        min_cutoff = 800
+        self, p: int = 0.5, always_apply=False, max_cutoff=6000, min_cutoff=800
     ):
         super(LowFrequencyMask, self).__init__(always_apply, p)
         self.max_cutoff = max_cutoff
         self.min_cutoff = min_cutoff
-        
+
     def apply(self, data, **params):
         audio, sr = data
 
         cutoff_value = np.random.randint(low=self.min_cutoff, high=self.max_cutoff)
         audio = butter_lowpass_filter(audio, cutoff=cutoff_value, fs=sr)
-            
+
         return audio, sr

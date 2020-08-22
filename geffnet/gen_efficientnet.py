@@ -302,6 +302,40 @@ def pad_framewise_output(framewise_output, frames_num):
 
     return output
 
+import torchlibrosa
+from argparse import Namespace
+
+class LogMel(nn.Module):
+    def __init__(self, params={
+        "n_mels": 128,
+        "fmin": 20,
+        "fmax": 16000,
+        "hop_length": 320,
+        "n_fft": 1024
+        # default hop_length=512 n_fft=2048 n_mels=128
+        # TODO: re-run b4 with those
+    }):
+        super(LogMel, self).__init__()
+        params = Namespace(**params)
+        self.spectrogram_extractor = torchlibrosa.stft.Spectrogram(
+            n_fft=params.n_fft, hop_length=params.hop_length
+        )
+        self.logmel_extractor = torchlibrosa.stft.LogmelFilterBank(
+            sr=32000,
+            n_fft=params.n_fft,
+            n_mels=params.n_mels,
+            top_db=None,
+            fmin=params.fmin,
+            fmax=params.fmax,
+            is_log=False,
+        )
+
+    def forward(self, sound):
+        spec = self.spectrogram_extractor(sound)
+        spec = self.logmel_extractor(spec)
+        spec = torch.log(1e-8 + spec)
+
+        return spec / 10.0
 
 class GenEfficientNet(nn.Module):
     """ Generic EfficientNets
@@ -371,6 +405,14 @@ class GenEfficientNet(nn.Module):
         self.att_block = AttBlock(num_features, num_classes, activation="sigmoid")
         self.interpolate_ratio = 31
         # self.classifier = nn.Linear(num_features, num_classes)
+        self.logmel = LogMel()
+        self.spec_augm = torchlibrosa.augmentation.SpecAugmentation(
+            time_drop_width=64,
+            time_stripes_num=2 * (15 // 5),
+            freq_drop_width=8,
+            freq_stripes_num=2,
+        )
+        self.spec_augm_prob = 0.33
 
         for n, m in self.named_modules():
             if weight_init == "goog":
@@ -405,8 +447,19 @@ class GenEfficientNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        x = self.logmel(x)
+        #print(x.shape)
+        if self.training:
+            mask = (torch.rand(x.size(0)) > 0.33).cuda()
+            x = torch.where(
+                torch.repeat_interleave(mask, x.size(2) * x.size(3)).reshape(x.size()),
+                x, self.spec_augm(x))
+
+        x = x.transpose(2, 3)
+        x = torch.cat([x, x, x], dim=1)
         frames_num = x.shape[3]
         x = self.features(x)
+        #print(x.shape)
 
         x = x.transpose(2, 3)
         x = torch.mean(x, dim=3)

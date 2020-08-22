@@ -17,6 +17,7 @@ def mo_(output):
     else:
         return output
 
+
 def onehot(targets, targets_secondary, num_classes, smoothing=0.0):
     size = targets.size(0)
     one_hot = torch.zeros(size, num_classes)
@@ -79,7 +80,6 @@ def train_fn(
 
         if scheduler_warmup is not None and epoch < 3:
             scheduler_warmup.step()
-
 
         acc, n_position = get_position_accuracy(
             outputs, d["target"].to(device)[: outputs.size(0)]
@@ -162,7 +162,9 @@ def valid_fn(valid_loader, model, loss_fn, device, epoch, args):
     for t in np.linspace(0.05, 0.95, 19):
         score = get_f1_micro(
             outputs_all,
-            onehot(targets_all, targets_secondary_all, args.num_classes, smoothing=0.0).to(device),
+            onehot(
+                targets_all, targets_secondary_all, args.num_classes, smoothing=0.0
+            ).to(device),
             t,
         )
         if score > best_score_2:
@@ -224,7 +226,7 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
         {
             f"test f1 (best){key}": best_score,
             f"test threshold (best){key}": best_threshold,
-            #f"test loss{key}": loss.item(),
+            # f"test loss{key}": loss.item(),
         },
         step=epoch,
     )

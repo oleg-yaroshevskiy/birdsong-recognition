@@ -10,9 +10,7 @@ from transforms import (
 
 
 def get_test_samples(train_le, args):
-    SpectToImage = (
-        SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
-    )
+    SpectToImage = SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
     summary_df = pd.read_csv("../input/test/merged_summary.csv")
     transforms = albumentations.Compose(
         [
@@ -90,7 +88,7 @@ def prepare_test(files, meta, le_encoder, args, transforms):
     targets = []
     for file_ in files:
         batch = load_test_batch(file_, sr=args.sample_rate)
-        batch = transform_test_batch(batch, transforms, sr=args.sample_rate)
+        # batch = transform_test_batch(batch, transforms, sr=args.sample_rate)
 
         test = meta[
             meta.filename_seconds.apply(lambda x: x.rsplit("_", 1)[0])

@@ -52,7 +52,7 @@ if args.add_xeno:
     )
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
-#train_nocall["ebird_label"] = train_le.transform(train_nocall.ebird_code.values)
+# train_nocall["ebird_label"] = train_le.transform(train_nocall.ebird_code.values)
 
 kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
@@ -60,11 +60,7 @@ for fold, (t_idx, v_idx) in enumerate(
 ):
     run_id = "{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else "")
     wandb.init(
-        config=args,
-        project="birdsong",
-        name=run_id,
-        id=run_id,
-        reinit=True,
+        config=args, project="birdsong", name=run_id, id=run_id, reinit=True,
     )
 
     # DataLoaders
@@ -118,7 +114,9 @@ for fold, (t_idx, v_idx) in enumerate(
             valid_loader, model, loss_fn, device, epoch, args
         )
         test_f1_1 = test_fn(model, loss_fn, device, test_samples_1, epoch, "", args)
-        test_f1_2 = test_fn(model, loss_fn, device, test_samples_2, epoch, " extended", args)
+        test_f1_2 = test_fn(
+            model, loss_fn, device, test_samples_2, epoch, " extended", args
+        )
 
         print(f"Fold {fold} ** Epoch {epoch+1} **==>** Accuracy = {valid_acc:.4f}")
 
