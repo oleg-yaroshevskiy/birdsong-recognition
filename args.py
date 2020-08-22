@@ -10,11 +10,11 @@ parser.add_argument("--num_workers", type=int, default=16)
 
 parser.add_argument("--model", type=str, default="b4")
 parser.add_argument("--name", type=str, default="")
-parser.add_argument("--batch_size", type=int, default=32)
-parser.add_argument("--epochs", type=int, default=50)
+parser.add_argument("--batch_size", type=int, default=16)
+parser.add_argument("--epochs", type=int, default=75)
 
 parser.add_argument("--max_duration", type=int, default=5)
-parser.add_argument("--warmup", type=int, default=0)  # < 1 epoch
+parser.add_argument("--warmup", type=int, default=500)  # < 1 epoch
 parser.add_argument("--lr_stop", type=str, default="1e-5")
 parser.add_argument("--lr_base", type=str, default="1e-3")
 parser.add_argument("--wd", type=float, default=1e-5)
@@ -23,23 +23,23 @@ parser.add_argument("--eps", type=float, default=1e-8)
 parser.add_argument("--lr_patience", type=int, default=2)
 parser.add_argument("--lr_drop_rate", type=str, default="np.sqrt(0.1)")
 parser.add_argument("--opt_lookahead", type=str, default="False")
-parser.add_argument("--batch_accumulation", type=int, default=1)
+parser.add_argument("--batch_accumulation", type=int, default=2)
 
-parser.add_argument("--nmels", type=int, default=64)
+parser.add_argument("--nmels", type=int, default=128)
 
-parser.add_argument("--smoothing", type=float, default=0.0)
+parser.add_argument("--smoothing", type=float, default=0.2)
 parser.add_argument("--mixup", type=float, default=0.0)
-parser.add_argument("--secondary", type=str, default="False")
+parser.add_argument("--secondary", type=str, default="True")
 parser.add_argument("--sigmoid", type=str, default="False")
 
-parser.add_argument("--add_xeno", type=str, default="False")
+parser.add_argument("--add_xeno", type=str, default="True")
 
-parser.add_argument("--augm_noise_or_bg", type=float, default=0.33)
-parser.add_argument("--augm_bg_prob", type=float, default=0.)
-parser.add_argument("--augm_vol_prob", type=float, default=0.0)
-parser.add_argument("--augm_noise_prob", type=float, default=1.)
+parser.add_argument("--augm_noise_or_bg", type=float, default=0.66)
+parser.add_argument("--augm_bg_prob", type=float, default=0.5)
+parser.add_argument("--augm_vol_prob", type=float, default=1.0)
+parser.add_argument("--augm_noise_prob", type=float, default=0.5)
 parser.add_argument("--augm_spec_prob", type=float, default=0.33)
-parser.add_argument("--augm_low_pass", type=float, default=0.33)
+parser.add_argument("--augm_low_pass", type=float, default=0.)
 
 args = parser.parse_args()
 
