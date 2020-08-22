@@ -13,7 +13,8 @@ from transforms import (
     SpectToImage3c,
     AddBackground,
     VolumeOff,
-    PinksNoiseInjection
+    PinksNoiseInjection,
+    LowFrequencyMask
 )
 from args import args
 import numpy as np
@@ -31,9 +32,8 @@ def get_train_augmentations(args):
     if args.augm_vol_prob > 0:
         train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
 
-    # if args.augm_bg_prob > 0:
-    #     train_audio_augmentation.append(AddBackground(p=args.augm_bg_prob))
    
+    
 
     if args.augm_noise_or_bg > 0:
         train_audio_augmentation.append(
@@ -43,6 +43,9 @@ def get_train_augmentations(args):
             ],
             p=args.augm_noise_or_bg)
         )
+
+     if args.augm_low_pass > 0:
+        train_audio_augmentation.append(LowFrequencyMask(p=0.75))
 
     train_audio_augmentation.extend(
         [

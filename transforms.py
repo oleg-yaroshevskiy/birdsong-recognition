@@ -18,6 +18,20 @@ from numpy import sum as npsum
 
 import cv2
 
+from scipy.signal import butter, lfilter, freqz
+
+
+def butter_lowpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+def butter_lowpass_filter(data, cutoff=1, fs=30.0, order=5):
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y = lfilter(b, a, data)
+    return y
+
 def powerlaw_psd_gaussian(exponent, size, fmin=0):
     """Gaussian (1/f)**beta noise.
     Based on the algorithm in:
@@ -333,7 +347,7 @@ class Stft(AudioTransform):
         sound, sr = data
 
         _, _, stft = scipy.signal.stft(sound, nperseg=512, noverlap=192)
-        melspec = np.log(np.abs(stft) + 1e-8)
+        melspec = np.log(np.abs(stft).clip(1e-5, 10))
         melspec = cv2.resize(melspec[1:], (melspec.shape[1], 64))
         melspec = melspec.astype(np.float32)
 
@@ -416,3 +430,24 @@ class SpectToImage3c(AudioTransform):
         image = image.astype(np.float32) / 100.0
 
         return image
+
+
+class LowFrequencyMask(AudioTransform):
+    def __init__(
+        self,
+        p: int = 0.5,
+        always_apply = False,
+        max_cutoff = 6000,
+        min_cutoff = 800
+    ):
+        super(LowFrequencyMask, self).__init__(always_apply, p)
+        self.max_cutoff = max_cutoff
+        self.min_cutoff = min_cutoff
+        
+    def apply(self, data, **params):
+        audio, sr = data
+
+        cutoff_value = np.random.randint(low=self.min_cutoff, high=self.max_cutoff)
+        audio = butter_lowpass_filter(audio, cutoff=cutoff_value, fs=sr)
+            
+        return audio, sr
