@@ -52,6 +52,14 @@ def get_model_loss(args):
         ).cuda()
         loss_fn = PANNsLoss()
 
+    elif args.model == "resnest":
+        from resnest import resnest50
+
+        model = resnest50(
+            pretrained=True, num_classes=args.num_classes
+        ).cuda()
+        loss_fn = PANNsLoss()
+
     else:
         model = torch.hub.load(
             "rwightman/gen-efficientnet-pytorch",
@@ -128,7 +136,10 @@ class Cnn14_DecisionLevelAtt(nn.Module):
     def forward(self, x):
         x = self.logmel(x)
         if self.training:
-            x = torch.where(torch.rand(x.size(0)) > 0.33, x, self.spec_augm(x))
+            mask = (torch.rand(x.size(0)) > 0.33).cuda()
+            x = torch.where(
+                torch.repeat_interleave(mask, x.size(2) * x.size(3)).reshape(x.size()),
+                x, self.spec_augm(x))
 
         frames_num = x.shape[2]
 
@@ -159,7 +170,7 @@ class Cnn14_DecisionLevelAtt(nn.Module):
         x = x.transpose(1, 2)
         x = F.dropout(x, p=0.5, training=self.training)
         (clipwise_output, _, segmentwise_output) = self.att_block(x)
-        segmentwise_output = segmentwise_output.transpose(1, 2)
+        #segmentwise_output = segmentwise_output.transpose(1, 2)
 
         # # Get framewise output
         # framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
