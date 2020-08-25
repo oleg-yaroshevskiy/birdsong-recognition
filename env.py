@@ -11,4 +11,4 @@ for file in tqdm.tqdm(wav_files):
     audios.append(librosa.load(file, 32000)[0])
 
 audios = np.hstack(audios)
-np.save("../input/env/bg2.npy", audios)
+np.save("../input/env/bg2.5.npy", audios)

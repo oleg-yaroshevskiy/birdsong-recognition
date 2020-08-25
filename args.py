@@ -26,6 +26,7 @@ parser.add_argument("--opt_lookahead", type=str, default="False")
 parser.add_argument("--batch_accumulation", type=int, default=2)
 
 parser.add_argument("--nmels", type=int, default=128)
+parser.add_argument("--num_classes", type=int, default=264)
 
 parser.add_argument("--smoothing", type=float, default=0.2)
 parser.add_argument("--mixup", type=float, default=0.0)
@@ -50,7 +51,6 @@ for arg in ["lr_base", "lr_drop_rate", "lr_stop"]:
     args.__dict__[arg] = eval(args.__dict__[arg])
 
 args.__dict__["betas"] = (0.9, 0.999)
-args.__dict__["num_classes"] = 264
 args.__dict__["sample_rate"] = 32000
 args.__dict__["melspectrogram_parameters"] = {
     "n_mels": args.nmels,

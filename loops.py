@@ -213,7 +213,7 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
     scores_by_t = []
 
     for t in np.linspace(0.05, 0.95, 19):
-        score = get_f1_micro_nocall(outputs, samples["targets"], t)
+        score = get_f1_micro_nocall(outputs, samples["targets"], t, args.num_classes)
         if score > best_score:
             best_score = score
             best_threshold = t
