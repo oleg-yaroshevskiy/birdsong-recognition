@@ -394,7 +394,7 @@ class GenEfficientNet(nn.Module):
         self.bn2 = norm_layer(num_features, **norm_kwargs)
         self.act2 = act_layer(inplace=True)
 
-        if self.attention:
+        if not self.attention:
             print("Attention EfNet")
             self.global_pool = nn.AdaptiveAvgPool2d(1)
             self.classifier = nn.Linear(num_features, num_classes)
@@ -458,7 +458,7 @@ class GenEfficientNet(nn.Module):
 
         x = self.features(x)
 
-        if self.attention:
+        if not self.attention:
             x = self.global_pool(x)
             x = x.flatten(1)
             if self.drop_rate > 0.:
