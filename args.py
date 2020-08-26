@@ -6,6 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--ROOT_PATH", type=str, default="../input/")
 parser.add_argument("--seed", type=int, default=42)
 parser.add_argument("--folds", type=int, default=5)
+parser.add_argument("--fold", type=int, default=None)
 parser.add_argument("--num_workers", type=int, default=16)
 
 parser.add_argument("--model", type=str, default="b4")

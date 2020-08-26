@@ -8,18 +8,18 @@ import os
 
 warnings.filterwarnings("ignore")
 
-files = glob.glob("../input/xeno-carlo/*/*mp3")
+files = glob.glob("../input/dcase/wav/*.wav")
 print("Total files", len(files))
 
 
 def to_numpy(file):
     try:
         samples, _ = librosa.load(file, sr=32000)
-        np.save(file.replace("mp3", "npy"), samples)
+        np.save(file.replace(".wav", ".npy"), samples)
         os.remove(file)
-    except:
-        print(file)
+    except Exception as e:
+        print(file, e)
 
 
-with Pool(8) as p:
+with Pool(32) as p:
     _ = list(tqdm(p.imap(to_numpy, files), total=len(files)))

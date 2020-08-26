@@ -123,3 +123,49 @@ class BirdDataset:
             "target": torch.tensor(target, dtype=torch.long),
             "target_secondary": ebird_label_secondary.long(),
         }
+
+
+
+class DcaseDataset:
+    def __init__(self, df, args, valid=False):
+        self.args = args
+        self.filename = df.itemid.values
+        self.hasbird = df.hasbird.values
+        self.sample_rate = args.sample_rate
+
+        self.folder = "wav"
+
+        self.aug = get_train_augmentations(args)
+
+    def __len__(self):
+        return len(self.filename)
+
+    def load_npy(self, path):
+        try:
+            return (
+                np.load(path).astype(
+                    np.float32
+                ),
+                self.sample_rate,
+            )
+        except:
+            print("can't read file", path)
+            return (
+                np.zeros(self.sample_rate * self.args.max_duration, dtype=np.float32),
+                self.sample_rate,
+            )
+
+    def __getitem__(self, item):
+        filename = self.filename[item]
+        ebird_label = self.hasbird[item]
+        folder = self.folder
+
+        data = self.load_npy(f"{args.ROOT_PATH}/dcase/{folder}/{filename}.npy")
+        spect, _ = self.aug(data=data)["data"]
+
+        target = ebird_label
+
+        return {
+            "spect": torch.tensor(spect, dtype=torch.float),
+            "target": torch.tensor(target, dtype=torch.long)
+        }

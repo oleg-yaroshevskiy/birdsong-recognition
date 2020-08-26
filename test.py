@@ -103,7 +103,7 @@ def prepare_test(files, meta, le_encoder, args, transforms):
             lambda x: transform(x.split()) if x is not None else []
         )
 
-        target = np.zeros((len(test), args.num_classes + 1))
+        target = np.zeros((len(test), 265))
 
         for i, values in enumerate(test["labels"].values):
             if len(values) == 0:

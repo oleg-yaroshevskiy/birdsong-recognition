@@ -4,6 +4,7 @@ from utils import (
     get_learning_rate,
     get_f1_micro,
     get_f1_micro_nocall,
+    get_accuracy
 )
 from tqdm import tqdm
 import torch
@@ -213,7 +214,7 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
     scores_by_t = []
 
     for t in np.linspace(0.05, 0.95, 19):
-        score = get_f1_micro_nocall(outputs, samples["targets"], t, args.num_classes)
+        score = get_f1_micro_nocall(outputs, samples["targets"], t)
         if score > best_score:
             best_score = score
             best_threshold = t
@@ -232,3 +233,55 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
     )
 
     return best_score
+
+
+
+def finetune_fn(
+    train_loader, model, optimizer, scheduler_warmup, loss_fn, device, epoch, args
+):
+    total_loss = AverageMeter()
+    accuracies = AverageMeter()
+
+    model.train()
+    optimizer.zero_grad()
+    accumulated_loss = 0
+    batch_idx = 0
+
+    t = tqdm(train_loader)
+    for step, d in enumerate(t):
+        spect = d["spect"].to(device)
+
+        outputs = mo_(model(spect))
+        loss = loss_fn(outputs, d["target"].to(device).float())
+        loss.backward()
+
+        accumulated_loss += loss
+        if batch_idx % args.batch_accumulation == 0 and batch_idx > 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            accumulated_loss = 0
+        batch_idx += 1
+
+        if scheduler_warmup is not None and epoch < 3:
+            scheduler_warmup.step()
+
+        acc, n_position = get_accuracy(
+            outputs, d["target"].to(device)[: outputs.size(0)]
+        )
+
+        total_loss.update(loss.item(), n_position)
+        accuracies.update(acc, n_position)
+
+        t.set_description(
+            f"Train E:{epoch+1} - Loss:{total_loss.avg:0.4f} - Acc:{accuracies.avg:0.4f}"
+        )
+    wandb.log(
+        {
+            "train mAP": accuracies.avg,
+            "train loss": total_loss.avg,
+            "learning rate": get_learning_rate(optimizer),
+        },
+        step=epoch,
+    )
+
+    return total_loss.avg

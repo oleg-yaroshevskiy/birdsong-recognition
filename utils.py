@@ -8,7 +8,6 @@ import math
 import random
 from sklearn.metrics import f1_score
 
-
 def seed_all(args):
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
@@ -70,6 +69,11 @@ def get_position_accuracy(logits, labels, threshold=None):
     return np.float32(sum_correct) / total_num, total_num
 
 
+def get_accuracy(logits, labels):
+    #print(logits)
+    #print(labels)
+    return ((logits >= 0.5).long() == labels).float().mean(), len(logits)
+
 def get_f1_micro(logits, labels, threshold=None):
     probs = logits.cpu().data.numpy()
     labels = labels.cpu().data.numpy()
@@ -81,7 +85,7 @@ def get_f1_micro_nocall(logits, labels, threshold=None, num_classes=264):
     probs = logits.cpu().data.numpy() > threshold
 
     new_probs = np.zeros((probs.shape[0], num_classes + 1))
-    new_probs[:, :num_classes] = probs.astype(int)
+    new_probs[:, :num_classes] = probs.astype(int)[:, :num_classes]
 
     # nocall if all zeros
     for i in range(probs.shape[0]):

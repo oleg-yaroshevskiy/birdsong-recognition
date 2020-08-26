@@ -58,6 +58,9 @@ kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
     kfold.split(train.filename.values, train.ebird_code.values)
 ):
+    if args.fold is not None:
+        if fold != args.fold:
+            continue
     run_id = "{}_f{}{}".format(args.model, fold, "_" + args.name if args.name else "")
     wandb.init(
         config=args, project="birdsong", name=run_id, id=run_id, reinit=True,
@@ -93,6 +96,7 @@ for fold, (t_idx, v_idx) in enumerate(
     )
 
     model, loss_fn = get_model_loss(args)
+   # model.load_state_dict(torch.load("../models/cnn14_att_64_15sec_gpu_lp0.33_nocall/fold_0_test_2.pth"))
     optimizer, scheduler_warmup, scheduler = get_optimizer_scheduler(model, args)
 
     best_acc = 0

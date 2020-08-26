@@ -306,15 +306,7 @@ import torchlibrosa
 from argparse import Namespace
 
 class LogMel(nn.Module):
-    def __init__(self, params={
-        "n_mels": 128,
-        "fmin": 20,
-        "fmax": 16000,
-        "hop_length": 320,
-        "n_fft": 1024
-        # default hop_length=512 n_fft=2048 n_mels=128
-        # TODO: re-run b4 with those
-    }):
+    def __init__(self, params):
         super(LogMel, self).__init__()
         params = Namespace(**params)
         self.spectrogram_extractor = torchlibrosa.stft.Spectrogram(
@@ -350,6 +342,7 @@ class GenEfficientNet(nn.Module):
 
     def __init__(
         self,
+        config,
         block_args,
         num_classes=1000,
         in_chans=3,
@@ -370,6 +363,7 @@ class GenEfficientNet(nn.Module):
     ):
         super(GenEfficientNet, self).__init__()
         self.drop_rate = drop_rate
+        self.attention = "_att" in config.model
 
         if not fix_stem:
             stem_size = round_channels(
@@ -399,13 +393,17 @@ class GenEfficientNet(nn.Module):
         self.conv_head = select_conv2d(in_chs, num_features, 1, padding=pad_type)
         self.bn2 = norm_layer(num_features, **norm_kwargs)
         self.act2 = act_layer(inplace=True)
-        # self.global_pool = nn.AdaptiveAvgPool2d(1)
 
-        self.fc1 = nn.Linear(num_features, num_features, bias=True)
-        self.att_block = AttBlock(num_features, num_classes, activation="sigmoid")
-        self.interpolate_ratio = 31
-        # self.classifier = nn.Linear(num_features, num_classes)
-        self.logmel = LogMel()
+        if self.attention:
+            print("Attention EfNet")
+            self.global_pool = nn.AdaptiveAvgPool2d(1)
+            self.classifier = nn.Linear(num_features, num_classes)
+        else:
+            print("Default EfNet")
+            self.fc1 = nn.Linear(num_features, num_features, bias=True)
+            self.att_block = AttBlock(num_features, num_classes, activation="sigmoid")
+
+        self.logmel = LogMel(config.melspectrogram_parameters)
         self.spec_augm = torchlibrosa.augmentation.SpecAugmentation(
             time_drop_width=64,
             time_stripes_num=2 * (15 // 5),
@@ -448,7 +446,7 @@ class GenEfficientNet(nn.Module):
 
     def forward(self, x):
         x = self.logmel(x)
-        #print(x.shape)
+
         if self.training:
             mask = (torch.rand(x.size(0)) > 0.33).cuda()
             x = torch.where(
@@ -457,36 +455,34 @@ class GenEfficientNet(nn.Module):
 
         x = x.transpose(2, 3)
         x = torch.cat([x, x, x], dim=1)
-        frames_num = x.shape[3]
+
         x = self.features(x)
-        #print(x.shape)
 
-        x = x.transpose(2, 3)
-        x = torch.mean(x, dim=3)
-        x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
-        x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
-        x = x1 + x2
-        x = F.dropout(x, p=0.5, training=self.training)
-        x = x.transpose(1, 2)
-        x = F.relu_(self.fc1(x))
-        x = x.transpose(1, 2)
-        x = F.dropout(x, p=0.5, training=self.training)
-        (clipwise_output, _, segmentwise_output) = self.att_block(x)
-        # segmentwise_output = segmentwise_output.transpose(1, 2)
+        if self.attention:
+            x = self.global_pool(x)
+            x = x.flatten(1)
+            if self.drop_rate > 0.:
+                x = F.dropout(x, p=self.drop_rate, training=self.training)
+            return self.classifier(x)
+        else:
+            x = x.transpose(2, 3)
+            x = torch.mean(x, dim=3)
+            x1 = F.max_pool1d(x, kernel_size=3, stride=1, padding=1)
+            x2 = F.avg_pool1d(x, kernel_size=3, stride=1, padding=1)
+            x = x1 + x2
+            x = F.dropout(x, p=0.5, training=self.training)
+            x = x.transpose(1, 2)
+            x = F.relu_(self.fc1(x))
+            x = x.transpose(1, 2)
+            x = F.dropout(x, p=0.5, training=self.training)
+            (clipwise_output, _, segmentwise_output) = self.att_block(x)
 
-        # # Get framewise output
-        # framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
-        # framewise_output = pad_framewise_output(framewise_output, frames_num)
-
-        # output_dict = {'framewise_output': framewise_output,
-        #     'clipwise_output': clipwise_output}
-
-        return clipwise_output, segmentwise_output
+            return clipwise_output, segmentwise_output
 
 
-def _create_model(model_kwargs, variant, pretrained=False):
+def _create_model(config, model_kwargs, variant, pretrained=False):
     as_sequential = model_kwargs.pop("as_sequential", False)
-    model = GenEfficientNet(**model_kwargs)
+    model = GenEfficientNet(config, **model_kwargs)
     if pretrained:
         load_pretrained(model, model_urls[variant])
     if as_sequential:
@@ -710,7 +706,7 @@ def _gen_spnasnet(variant, channel_multiplier=1.0, pretrained=False, **kwargs):
 
 
 def _gen_efficientnet(
-    variant, channel_multiplier=1.0, depth_multiplier=1.0, pretrained=False, **kwargs
+    config, variant, channel_multiplier=1.0, depth_multiplier=1.0, pretrained=False, **kwargs
 ):
     """Creates an EfficientNet model.
 
@@ -752,7 +748,7 @@ def _gen_efficientnet(
         norm_kwargs=resolve_bn_args(kwargs),
         **kwargs,
     )
-    model = _create_model(model_kwargs, variant, pretrained)
+    model = _create_model(config, model_kwargs, variant, pretrained)
     return model
 
 
@@ -1609,13 +1605,14 @@ def tf_efficientnet_b8_ap(pretrained=False, **kwargs):
     return model
 
 
-def tf_efficientnet_b0_ns(pretrained=False, **kwargs):
+def tf_efficientnet_b0_ns(config, pretrained=False, **kwargs):
     """ EfficientNet-B0 NoisyStudent. Tensorflow compatible variant
     Paper: Self-training with Noisy Student improves ImageNet classification (https://arxiv.org/abs/1911.04252)
     """
     kwargs["bn_eps"] = BN_EPS_TF_DEFAULT
     kwargs["pad_type"] = "same"
     model = _gen_efficientnet(
+        config,
         "tf_efficientnet_b0_ns",
         channel_multiplier=1.0,
         depth_multiplier=1.0,
@@ -1673,13 +1670,14 @@ def tf_efficientnet_b3_ns(pretrained=False, **kwargs):
     return model
 
 
-def tf_efficientnet_b4_ns(pretrained=False, **kwargs):
+def tf_efficientnet_b4_ns(config, pretrained=False, **kwargs):
     """ EfficientNet-B4 NoisyStudent. Tensorflow compatible variant
     Paper: Self-training with Noisy Student improves ImageNet classification (https://arxiv.org/abs/1911.04252)
     """
     kwargs["bn_eps"] = BN_EPS_TF_DEFAULT
     kwargs["pad_type"] = "same"
     model = _gen_efficientnet(
+        config,
         "tf_efficientnet_b4_ns",
         channel_multiplier=1.4,
         depth_multiplier=1.8,
