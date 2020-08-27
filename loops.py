@@ -226,6 +226,7 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
     wandb.log(
         {
             f"test f1 (best){key}": best_score,
+            f"test f1 (0.5){key}": scores_by_t[9],
             f"test threshold (best){key}": best_threshold,
             # f"test loss{key}": loss.item(),
         },
@@ -234,7 +235,44 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
 
     return best_score
 
+def test_folds_fn(models, loss_fn, device, samples, key, args):
+    models = models if isinstance(models, list) else [models]
 
+    outputs_all = []
+    for model in models:
+        model.eval()
+        with torch.no_grad():
+            outputs = []
+            for batch in torch.utils.data.DataLoader(
+                samples["spect"], batch_size=16, shuffle=False
+            ):
+                output = mo_(model(batch.to(device)))
+                outputs.append(output)
+
+            outputs = torch.cat(outputs, dim=0)
+
+            if args.sigmoid:
+                outputs = outputs.sigmoid()
+
+            outputs_all.append(outputs)
+        
+    outputs = torch.stack(outputs_all).mean(dim=0)
+
+    best_score, best_threshold = 0.0, 0.0
+    scores = []
+    scores_by_t = {}
+
+    for t in np.linspace(0.05, 0.95, 19):
+        score = get_f1_micro_nocall(outputs, samples["targets"], t)
+        if score > best_score:
+            best_score = score
+            best_threshold = t
+
+        scores_by_t[round(t, 2)] = round(score, 4)
+
+    print(f"test{key} f1 scores:", scores_by_t)
+
+    return best_score
 
 def finetune_fn(
     train_loader, model, optimizer, scheduler_warmup, loss_fn, device, epoch, args
