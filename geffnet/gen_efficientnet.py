@@ -410,7 +410,7 @@ class GenEfficientNet(nn.Module):
             freq_drop_width=8,
             freq_stripes_num=2,
         )
-        self.spec_augm_prob = 0.33
+        self.spec_augm_prob = config.augm_spec_prob
 
         for n, m in self.named_modules():
             if weight_init == "goog":
