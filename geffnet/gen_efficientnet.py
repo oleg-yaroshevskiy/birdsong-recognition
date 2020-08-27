@@ -395,11 +395,11 @@ class GenEfficientNet(nn.Module):
         self.act2 = act_layer(inplace=True)
 
         if not self.attention:
-            print("Attention EfNet")
+            print("Default EfNet")
             self.global_pool = nn.AdaptiveAvgPool2d(1)
             self.classifier = nn.Linear(num_features, num_classes)
         else:
-            print("Default EfNet")
+            print("Attention EfNet")
             self.fc1 = nn.Linear(num_features, num_features, bias=True)
             self.att_block = AttBlock(num_features, num_classes, activation="sigmoid")
 
