@@ -233,7 +233,7 @@ def test_fn(model, loss_fn, device, samples, epoch, key, args):
         step=epoch,
     )
 
-    return best_score
+    return best_score, scores_by_t[9]
 
 def test_folds_fn(models, loss_fn, device, samples, key, args):
     models = models if isinstance(models, list) else [models]

@@ -102,6 +102,7 @@ for fold, (t_idx, v_idx) in enumerate(
     best_acc = 0
     best_test_1 = 0
     best_test_2 = 0
+    best_test_2_05 = 0
 
     for epoch in range(args.epochs):
         train_loss = train_fn(
@@ -117,8 +118,8 @@ for fold, (t_idx, v_idx) in enumerate(
         valid_loss, valid_acc = valid_fn(
             valid_loader, model, loss_fn, device, epoch, args
         )
-        test_f1_1 = test_fn(model, loss_fn, device, test_samples_1, epoch, "", args)
-        test_f1_2 = test_fn(
+        test_f1_1, _ = test_fn(model, loss_fn, device, test_samples_1, epoch, "", args)
+        test_f1_2, test_f1_2_05 = test_fn(
             model, loss_fn, device, test_samples_2, epoch, " extended", args
         )
 
@@ -139,6 +140,11 @@ for fold, (t_idx, v_idx) in enumerate(
             torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2.pth")
             wandb.save(f"{model_directory}/fold_{fold}_test_2.pth")
             best_test_2 = test_f1_2
+
+        if test_f1_2_05 > best_test_2_05:
+            torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2_05.pth")
+            wandb.save(f"{model_directory}/fold_{fold}_test_2_05.pth")
+            best_test_2_05 = test_f1_2_05
 
         scheduler.step(valid_acc)
 
