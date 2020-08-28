@@ -38,7 +38,8 @@ def mixup(data, targets, alpha=0.2):
 
     lam = np.random.beta(alpha, alpha)
     data = lam * data[:half] + (1 - lam) * data[half:]
-    targets = lam * targets[:half] + (1 - lam) * targets[half:]
+    # targets = lam * targets[:half] + (1 - lam) * targets[half:]
+    targets = torch.max(targets[:half], targets[half:])
 
     return data, targets
 
@@ -271,6 +272,9 @@ def test_folds_fn(models, loss_fn, device, samples, key, args):
         scores_by_t[round(t, 2)] = round(score, 4)
 
     print(f"test{key} f1 scores:", scores_by_t)
+    print(f"test{key} f1 t=0.5:", scores_by_t[0.5])
+    print(f"test{key} best: t=", round(best_threshold, 2), round(best_score, 4))
+    print()
 
     return best_score
 

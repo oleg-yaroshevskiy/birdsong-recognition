@@ -36,10 +36,18 @@ def get_model_loss(args):
         model.load_state_dict(new_state_dict, strict=False)
 
         loss_fn = PANNsLoss()
-    elif args.model == "r38_att":
+    elif args.model == "r38":
         model = ResNet38(args.num_classes, args).cuda()
         state = torch.load("ResNet38_mAP=0.434.pth")["model"]
-        model.load_state_dict(state, strict=False)
+
+        new_state_dict = OrderedDict()
+        for k, v in state.items():
+            if "bn0" in k and v.dim() != 0 and args.nmels == 128:
+                new_state_dict[k] = torch.cat([v, v])
+            else:
+                new_state_dict[k] = v
+
+        model.load_state_dict(new_state_dict, strict=False)
 
         loss_fn = torch.nn.BCEWithLogitsLoss()
         args.__dict__["sigmoid"] = True
@@ -386,7 +394,7 @@ class ResNet38(nn.Module):
     def __init__(self, classes_num, config):
         super(ResNet38, self).__init__()
 
-        self.bn0 = nn.BatchNorm2d(64)
+        self.bn0 = nn.BatchNorm2d(config.nmels)
 
         self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
 

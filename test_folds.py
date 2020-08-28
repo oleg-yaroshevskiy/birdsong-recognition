@@ -33,14 +33,17 @@ train_le = LabelEncoder().fit(train.ebird_code.values)
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
 
+for checkpoint_set in ["", "_test_1", "_test_2", "_test_2_05"]:
+    models = []
+    for fold in range(args.folds):
+        model, loss_fn = get_model_loss(args)
+        model.load_state_dict(torch.load(f"../models/b4_128_xeno_medium/fold_{fold}{checkpoint_set}.pth"))
+        models.append(model)
 
-models = []
-for fold in range(args.folds):
-    model, loss_fn = get_model_loss(args)
-    model.load_state_dict(torch.load(f"../models/cnn14_att_128_15s_sec_sm0.2_light_augm_xeno/fold_{fold}_test_2.pth"))
-    models.append(model)
-
-test_f1_1 = test_folds_fn(models, loss_fn, device, test_samples_1, "", args)
-test_f1_2 = test_folds_fn(
-    models, loss_fn, device, test_samples_2, " extended", args
-)
+    print("Checkpoint set:", checkpoint_set)
+    test_f1_1 = test_folds_fn(models, loss_fn, device, test_samples_1, "", args)
+    test_f1_2 = test_folds_fn(
+        models, loss_fn, device, test_samples_2, " extended", args
+    )
+    print()
+    print()
