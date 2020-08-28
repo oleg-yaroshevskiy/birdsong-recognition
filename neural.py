@@ -18,36 +18,38 @@ from blocks import (
 from geffnet import tf_efficientnet_b4_ns, tf_efficientnet_b0_ns
 
 
-def get_model_loss(args):
+def get_model_loss(args, pretrained=True):
     if args.model == "cnn14_att":
         model = Cnn14_DecisionLevelAtt(args.num_classes, args).cuda()
-        state = torch.load("Cnn14_DecisionLevelAtt_mAP=0.425.pth")["model"]
+        if pretrained:
+            state = torch.load("Cnn14_DecisionLevelAtt_mAP=0.425.pth")["model"]
 
-        new_state_dict = OrderedDict()
-        for k, v in state.items():
-            if ("att_block." in k) and v.dim() != 0:
-                print(k)
-                new_state_dict[k] = v[: args.num_classes]
-            elif "bn0" in k and v.dim() != 0 and args.nmels == 128:
-                new_state_dict[k] = torch.cat([v, v])
-            else:
-                new_state_dict[k] = v
+            new_state_dict = OrderedDict()
+            for k, v in state.items():
+                if ("att_block." in k) and v.dim() != 0:
+                    print(k)
+                    new_state_dict[k] = v[: args.num_classes]
+                elif "bn0" in k and v.dim() != 0 and args.nmels == 128:
+                    new_state_dict[k] = torch.cat([v, v])
+                else:
+                    new_state_dict[k] = v
 
-        model.load_state_dict(new_state_dict, strict=False)
+            model.load_state_dict(new_state_dict, strict=False)
 
         loss_fn = PANNsLoss()
     elif args.model == "r38":
         model = ResNet38(args.num_classes, args).cuda()
-        state = torch.load("ResNet38_mAP=0.434.pth")["model"]
+        if pretrained:
+            state = torch.load("ResNet38_mAP=0.434.pth")["model"]
 
-        new_state_dict = OrderedDict()
-        for k, v in state.items():
-            if "bn0" in k and v.dim() != 0 and args.nmels == 128:
-                new_state_dict[k] = torch.cat([v, v])
-            else:
-                new_state_dict[k] = v
+            new_state_dict = OrderedDict()
+            for k, v in state.items():
+                if "bn0" in k and v.dim() != 0 and args.nmels == 128:
+                    new_state_dict[k] = torch.cat([v, v])
+                else:
+                    new_state_dict[k] = v
 
-        model.load_state_dict(new_state_dict, strict=False)
+            model.load_state_dict(new_state_dict, strict=False)
 
         loss_fn = torch.nn.BCEWithLogitsLoss()
         args.__dict__["sigmoid"] = True
@@ -55,11 +57,11 @@ def get_model_loss(args):
     elif args.model in ["b0", "b0_att", "b4", "b4_att"]:
         if "b0" in args.model:
             model = tf_efficientnet_b0_ns(
-                args, pretrained=True, num_classes=args.num_classes
+                args, pretrained=pretrained, num_classes=args.num_classes
             ).cuda()
         if "b4" in args.model:
             model = tf_efficientnet_b4_ns(
-                args, pretrained=True, num_classes=args.num_classes
+                args, pretrained=pretrained, num_classes=args.num_classes
             ).cuda()
         if "_att" in args.model:
             loss_fn = PANNsLoss()
@@ -71,7 +73,7 @@ def get_model_loss(args):
         from resnest import resnest50
 
         model = resnest50(
-            pretrained=True, num_classes=args.num_classes
+            pretrained=pretrained, num_classes=args.num_classes
         ).cuda()
         loss_fn = PANNsLoss()
 
