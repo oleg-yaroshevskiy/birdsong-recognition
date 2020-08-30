@@ -78,7 +78,7 @@ def get_f1_micro(logits, labels, threshold=None):
     probs = logits.cpu().data.numpy()
     labels = labels.cpu().data.numpy()
 
-    return f1_score(labels, probs > threshold, average="micro")
+    return f1_score(labels, probs > threshold, average="samples")
 
 
 def get_f1_micro_nocall(logits, labels, threshold=None, num_classes=264):
@@ -92,7 +92,7 @@ def get_f1_micro_nocall(logits, labels, threshold=None, num_classes=264):
         if probs[i].max() == 0:
             new_probs[i, -1] = 1
 
-    return f1_score(labels, new_probs > threshold, average="micro")
+    return f1_score(labels, new_probs > threshold, average="samples")
 
 
 def get_learning_rate(optimizer):
