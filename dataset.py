@@ -30,7 +30,7 @@ def get_train_augmentations(args):
 
     if args.augm_vol_prob > 0:
         train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
-    
+
     if args.pitch_shift > 0:
         train_audio_augmentation.append(PitchShift(p=args.pitch_shift))
 
@@ -38,12 +38,14 @@ def get_train_augmentations(args):
         train_audio_augmentation.append(
             albumentations.core.composition.OneOf(
                 [
-                    AddBackground(p=args.augm_bg_prob),
                     PinksNoiseInjection(p=args.augm_noise_prob),
                 ],
                 p=args.augm_noise_or_bg,
             )
         )
+
+    if args.augm_bg_prob > 0:
+        train_audio_augmentation.append(AddBackground(p=args.augm_bg_prob))
 
     if args.augm_low_pass > 0:
         train_audio_augmentation.append(LowFrequencyMask(p=0.75))
