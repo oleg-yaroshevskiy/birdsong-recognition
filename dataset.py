@@ -15,6 +15,7 @@ from transforms import (
     VolumeOff,
     PinksNoiseInjection,
     LowFrequencyMask,
+    PitchShift
 )
 from args import args
 import numpy as np
@@ -29,6 +30,9 @@ def get_train_augmentations(args):
 
     if args.augm_vol_prob > 0:
         train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
+    
+    if args.pitch_shift > 0:
+        train_audio_augmentation.append(PitchShift(p=args.pitch_shift))
 
     if args.augm_noise_or_bg > 0:
         train_audio_augmentation.append(

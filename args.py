@@ -33,6 +33,7 @@ parser.add_argument("--smoothing", type=float, default=0.2)
 parser.add_argument("--mixup", type=float, default=0.0)
 parser.add_argument("--secondary", type=str, default="True")
 parser.add_argument("--sigmoid", type=str, default="False")
+parser.add_argument("--turn_off_augs", type=str, default="False")
 
 parser.add_argument("--add_xeno", type=str, default="False")
 
@@ -42,10 +43,11 @@ parser.add_argument("--augm_vol_prob", type=float, default=1.0)
 parser.add_argument("--augm_noise_prob", type=float, default=0.5)
 parser.add_argument("--augm_spec_prob", type=float, default=0.33)
 parser.add_argument("--augm_low_pass", type=float, default=0.0)
+parser.add_argument("--pitch_shift", type=float, default=0.0)
 
 args = parser.parse_args()
 
-for arg in ["opt_lookahead", "add_xeno", "secondary", "sigmoid"]:
+for arg in ["opt_lookahead", "add_xeno", "secondary", "sigmoid", "turn_off_augs"]:
     args.__dict__[arg] = args.__dict__[arg] == "True"
 
 for arg in ["lr_base", "lr_drop_rate", "lr_stop"]:

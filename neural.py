@@ -15,7 +15,7 @@ from blocks import (
     init_bn,
     init_layer,
 )
-from geffnet import tf_efficientnet_b4_ns, tf_efficientnet_b0_ns
+from geffnet import tf_efficientnet_b4_ns, tf_efficientnet_b0_ns, tf_efficientnet_b6_ns
 
 
 def get_model_loss(args, pretrained=True):
@@ -54,9 +54,13 @@ def get_model_loss(args, pretrained=True):
         loss_fn = torch.nn.BCEWithLogitsLoss()
         args.__dict__["sigmoid"] = True
 
-    elif args.model in ["b0", "b0_att", "b4", "b4_att"]:
+    elif args.model in ["b0", "b0_att", "b4", "b4_att", "b6"]:
         if "b0" in args.model:
             model = tf_efficientnet_b0_ns(
+                args, pretrained=pretrained, num_classes=args.num_classes
+            ).cuda()
+        if "b6" in args.model:
+            model = tf_efficientnet_b6_ns(
                 args, pretrained=pretrained, num_classes=args.num_classes
             ).cuda()
         if "b4" in args.model:

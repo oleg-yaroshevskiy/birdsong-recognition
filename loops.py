@@ -273,7 +273,7 @@ def test_folds_fn(models, loss_fn, device, samples, key, args):
 
     print(f"test{key} f1 scores:", scores_by_t)
     print(f"test{key} f1 t=0.5:", scores_by_t[0.5])
-    print(f"test{key} best: t=", round(best_threshold, 2), round(best_score, 4))
+    print(f"test{key}", round(best_score, 4),  "best: t=", round(best_threshold, 2))
     print()
 
     return best_score

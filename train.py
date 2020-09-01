@@ -151,5 +151,13 @@ for fold, (t_idx, v_idx) in enumerate(
         if isclose(optimizer, args.lr_stop):
             print("Exit on LR")
             break
+        
+        if args.turn_off_augs:
+            if isclose(optimizer, args.lr_stop / args.lr_drop_rate):
+                print("Dropping Augs")
+                model.spec_augm_prob = 0.
+                train_dataset.aug = valid_dataset.aug
+                
+        
 
     wandb.join()

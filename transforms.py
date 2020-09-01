@@ -218,7 +218,7 @@ class PitchShift(AudioTransform):
     def apply(self, data, **params):
         sound, sr = data
 
-        n_steps = np.random.randint(-10, 10)
+        n_steps = np.random.randint(-6, 6)
         augmented_sound = librosa.effects.pitch_shift(sound, sr, n_steps)
 
         return augmented_sound, sr

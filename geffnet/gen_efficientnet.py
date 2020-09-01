@@ -395,11 +395,11 @@ class GenEfficientNet(nn.Module):
         self.act2 = act_layer(inplace=True)
 
         if not self.attention:
-            print("Default EfNet")
+            #print("Default EfNet")
             self.global_pool = nn.AdaptiveAvgPool2d(1)
             self.classifier = nn.Linear(num_features, num_classes)
         else:
-            print("Attention EfNet")
+            #print("Attention EfNet")
             self.fc1 = nn.Linear(num_features, num_features, bias=True)
             self.att_block = AttBlock(num_features, num_classes, activation="sigmoid")
 
@@ -1703,7 +1703,7 @@ def tf_efficientnet_b5_ns(pretrained=False, **kwargs):
     return model
 
 
-def tf_efficientnet_b6_ns(pretrained=False, **kwargs):
+def tf_efficientnet_b6_ns(config, pretrained=False, **kwargs):
     """ EfficientNet-B6 NoisyStudent. Tensorflow compatible variant
     Paper: Self-training with Noisy Student improves ImageNet classification (https://arxiv.org/abs/1911.04252)
     """
@@ -1711,6 +1711,7 @@ def tf_efficientnet_b6_ns(pretrained=False, **kwargs):
     kwargs["bn_eps"] = BN_EPS_TF_DEFAULT
     kwargs["pad_type"] = "same"
     model = _gen_efficientnet(
+        config,
         "tf_efficientnet_b6_ns",
         channel_multiplier=1.8,
         depth_multiplier=2.6,
