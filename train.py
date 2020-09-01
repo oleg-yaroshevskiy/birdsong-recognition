@@ -15,7 +15,7 @@ from neural import get_optimizer_scheduler, get_model_loss
 from loops import train_fn, valid_fn, test_fn
 import wandb
 import random
-from utils import get_learning_rate, isclose, seed_all
+from utils import get_learning_rate, isclose, seed_all, RankOrderedList
 from test import get_test_samples
 import os
 
@@ -103,6 +103,8 @@ for fold, (t_idx, v_idx) in enumerate(
     best_test_1 = 0
     best_test_2 = 0
     best_test_2_05 = 0
+    ol_test_1 = RankOrderedList()
+    ol_test_2 = RankOrderedList()
 
     for epoch in range(args.epochs):
         train_loss = train_fn(
@@ -135,11 +137,15 @@ for fold, (t_idx, v_idx) in enumerate(
             torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_1.pth")
             wandb.save(f"{model_directory}/fold_{fold}_test_1.pth")
             best_test_1 = test_f1_1
+        
+        ol_test_1.insert(test_f1_1, lambda rank: torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_1_r{rank}.pth"))
 
         if test_f1_2 > best_test_2:
             torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2.pth")
             wandb.save(f"{model_directory}/fold_{fold}_test_2.pth")
             best_test_2 = test_f1_2
+
+        ol_test_2.insert(test_f1_2, lambda rank: torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2_r{rank}.pth"))
 
         if test_f1_2_05 > best_test_2_05:
             torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2_05.pth")

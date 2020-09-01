@@ -28,6 +28,9 @@ def onehot(targets, targets_secondary, num_classes, smoothing=0.0):
         one_hot[targets_secondary.bool()] = 1 - smoothing
 
     one_hot[torch.arange(size), targets] = 1 - smoothing
+    
+    if num_classes == 265:
+        one_hot[:, -1] = smoothing / (num_classes - 1)
 
     return one_hot
 
