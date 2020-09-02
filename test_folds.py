@@ -31,16 +31,49 @@ if not os.path.exists(model_directory):
 train = pd.read_csv("../input/train.csv")
 train_le = LabelEncoder().fit(train.ebird_code.values)
 
+def swa(checkpoints):
+    swa_state = torch.load(checkpoints[0])
+
+    for ch in checkpoints[1:]:
+        state = torch.load(ch)
+
+        for k, v in state.items():
+            swa_state[k] += v
+
+    for k, v in swa_state.items():
+        v /= len(checkpoints) 
+    
+    return swa_state
+
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
 
 for checkpoint_set in ["_test_1", "_test_2", "_test_2_05"]:
     models = []
     for fold in range(args.folds):
         model, loss_fn = get_model_loss(args, pretrained=False)
-        model.load_state_dict(torch.load(f"../models/b4_128_light_mixup/fold_{fold}{checkpoint_set}.pth"))
+        model.load_state_dict(torch.load(f"../models/b4_128_light_pshift_swa/fold_{fold}{checkpoint_set}.pth"))
         models.append(model)
 
     print("Checkpoint set:", checkpoint_set)
+    test_f1_1 = test_folds_fn(models, loss_fn, device, test_samples_1, "", args)
+    test_f1_2 = test_folds_fn(
+        models, loss_fn, device, test_samples_2, " extended", args
+    )
+    print()
+    print()
+
+for checkpoint_set in ["_test_1", "_test_2"]:
+    models = []
+    for fold in range(args.folds):
+        try:
+            model, loss_fn = get_model_loss(args, pretrained=False)
+            state = swa([f"../models/b4_128_light_pshift_swa/fold_{fold}{checkpoint_set}_r{rank}.pth" for rank in range(3)])
+            model.load_state_dict(state)
+            models.append(model)
+        except:
+            print("sorry cant find for fold", fold)
+
+    print("Checkpoint set: SWA", checkpoint_set)
     test_f1_1 = test_folds_fn(models, loss_fn, device, test_samples_1, "", args)
     test_f1_2 = test_folds_fn(
         models, loss_fn, device, test_samples_2, " extended", args
