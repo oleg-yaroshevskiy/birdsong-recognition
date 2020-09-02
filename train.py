@@ -29,8 +29,6 @@ if not os.path.exists(model_directory):
     os.makedirs(model_directory)
 
 train = pd.read_csv("../input/train.csv")
-# train_nocall = pd.read_csv("../input/env/nocall.csv")
-# train_nocall["folder"] = "env/audio/"
 
 train_le = LabelEncoder().fit(train.ebird_code.values)
 train["folder"] = "train_audio"
@@ -39,9 +37,6 @@ mapping = pd.Series(train.ebird_code.values, index=train.primary_label).to_dict(
 train["ebird_label_secondary"] = train.secondary_labels.apply(
     lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
 )
-# train_nocall["ebird_label_secondary"] = train_nocall.secondary_labels.apply(
-#     lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
-# )
 
 if args.add_xeno:
     aux_train = pd.read_csv("../input/train_extended.csv")
@@ -52,7 +47,6 @@ if args.add_xeno:
     )
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
-# train_nocall["ebird_label"] = train_le.transform(train_nocall.ebird_code.values)
 
 kfold = StratifiedKFold(n_splits=5)
 for fold, (t_idx, v_idx) in enumerate(
@@ -71,8 +65,6 @@ for fold, (t_idx, v_idx) in enumerate(
     valid_df = train.loc[v_idx]
     if args.add_xeno:
         train_df = pd.concat([train_df, aux_train], axis=0)
-
-    # train_df = pd.concat([train_df, train_nocall], axis=0)
 
     train_dataset = BirdDataset(df=train_df, args=args)
     valid_dataset = BirdDataset(df=valid_df, args=args, valid=True)
@@ -96,7 +88,6 @@ for fold, (t_idx, v_idx) in enumerate(
     )
 
     model, loss_fn = get_model_loss(args)
-   # model.load_state_dict(torch.load("../models/cnn14_att_64_15sec_gpu_lp0.33_nocall/fold_0_test_2.pth"))
     optimizer, scheduler_warmup, scheduler = get_optimizer_scheduler(model, args)
 
     best_acc = 0

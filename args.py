@@ -11,7 +11,7 @@ parser.add_argument("--num_workers", type=int, default=16)
 
 parser.add_argument("--model", type=str, default="b4")
 parser.add_argument("--name", type=str, default="")
-parser.add_argument("--batch_size", type=int, default=16)
+parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--epochs", type=int, default=75)
 
 parser.add_argument("--max_duration", type=int, default=5)
@@ -37,13 +37,12 @@ parser.add_argument("--turn_off_augs", type=str, default="False")
 
 parser.add_argument("--add_xeno", type=str, default="False")
 
-parser.add_argument("--augm_noise_or_bg", type=float, default=0.66)
-parser.add_argument("--augm_bg_prob", type=float, default=0.5)
+parser.add_argument("--augm_bg_prob", type=float, default=0.)
 parser.add_argument("--augm_vol_prob", type=float, default=1.0)
-parser.add_argument("--augm_noise_prob", type=float, default=0.5)
+parser.add_argument("--augm_noise_prob", type=float, default=0.33)
 parser.add_argument("--augm_spec_prob", type=float, default=0.33)
-parser.add_argument("--augm_low_pass", type=float, default=0.0)
-parser.add_argument("--pitch_shift", type=float, default=0.0)
+parser.add_argument("--augm_low_pass", type=float, default=0.33)
+parser.add_argument("--pitch_shift", type=float, default=0.33)
 
 args = parser.parse_args()
 

@@ -43,15 +43,6 @@ def get_train_augmentations(args):
     if args.augm_low_pass > 0:
         train_audio_augmentation.append(LowFrequencyMask(p=0.75))
 
-    # train_audio_augmentation.extend(
-    #     [
-    #         MelSpectrogram(
-    #             parameters=args.melspectrogram_parameters, always_apply=True
-    #         ),
-    #         SpecAugment(p=args.augm_spec_prob),
-    #         SpectToImage(always_apply=True),
-    #     ]
-    # )
     return albumentations.Compose(train_audio_augmentation)
 
 
@@ -60,10 +51,6 @@ def get_valid_augmentations(args):
     return albumentations.Compose(
         [
             IntRandomAudio(seconds=args.max_duration, always_apply=True),
-            # MelSpectrogram(
-            #     parameters=args.melspectrogram_parameters, always_apply=True
-            # ),
-            # SpectToImage(always_apply=True),
         ]
     )
 
