@@ -30,7 +30,7 @@ def get_train_augmentations(args):
 
     if args.augm_vol_prob > 0:
         train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
-    
+
     if args.pitch_shift > 0:
         train_audio_augmentation.append(PitchShift(p=args.pitch_shift))
 
