@@ -406,8 +406,8 @@ class GenEfficientNet(nn.Module):
         self.logmel = LogMel(config.melspectrogram_parameters)
         self.spec_augm = torchlibrosa.augmentation.SpecAugmentation(
             time_drop_width=64,
-            time_stripes_num=2 * (15 // 5),
-            freq_drop_width=8,
+            time_stripes_num=2 * (config.max_duration // 5),
+            freq_drop_width=config.nmels // 16,
             freq_stripes_num=2,
         )
         self.spec_augm_prob = config.augm_spec_prob

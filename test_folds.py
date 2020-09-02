@@ -47,11 +47,13 @@ def swa(checkpoints):
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
 
+experiment = "b4_128_light_pshift_bg_0.5"
+
 for checkpoint_set in ["_test_1", "_test_2", "_test_2_05"]:
     models = []
     for fold in range(args.folds):
         model, loss_fn = get_model_loss(args, pretrained=False)
-        model.load_state_dict(torch.load(f"../models/b4_128_light_pshift_swa/fold_{fold}{checkpoint_set}.pth"))
+        model.load_state_dict(torch.load(f"../models/{experiment}/fold_{fold}{checkpoint_set}.pth"))
         models.append(model)
 
     print("Checkpoint set:", checkpoint_set)
@@ -67,7 +69,7 @@ for checkpoint_set in ["_test_1", "_test_2"]:
     for fold in range(args.folds):
         try:
             model, loss_fn = get_model_loss(args, pretrained=False)
-            state = swa([f"../models/b4_128_light_pshift_swa/fold_{fold}{checkpoint_set}_r{rank}.pth" for rank in range(3)])
+            state = swa([f"../models/{experiment}/fold_{fold}{checkpoint_set}_r{rank}.pth" for rank in range(3)])
             model.load_state_dict(state)
             models.append(model)
         except:
