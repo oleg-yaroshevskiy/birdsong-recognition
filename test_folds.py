@@ -37,7 +37,7 @@ for checkpoint_set in ["_test_1", "_test_2", "_test_2_05"]:
     models = []
     for fold in range(args.folds):
         model, loss_fn = get_model_loss(args, pretrained=False)
-        model.load_state_dict(torch.load(f"../models/b4_128_light/fold_{fold}{checkpoint_set}.pth"))
+        model.load_state_dict(torch.load(f"../models/b4_128_light_mixup/fold_{fold}{checkpoint_set}.pth"))
         models.append(model)
 
     print("Checkpoint set:", checkpoint_set)

@@ -169,3 +169,22 @@ class Lookahead(Optimizer):
     def add_param_group(self, param_group):
         param_group["counter"] = 0
         self.optimizer.add_param_group(param_group)
+
+
+class RankOrderedList:
+    def __init__(self, maxlen=3):
+        self.maxlen = maxlen
+        self.values = [0.,] * maxlen
+        
+    def insert(self, value, callback=None):
+        for rank, v in enumerate(self.values):
+            if value > v:
+                self.values = self.values[:rank] + [value] + self.values[rank:]
+                self.values = self.values[:self.maxlen]
+                
+                if callback:
+                    callback(rank)
+                    
+                return rank
+        
+        return -1
