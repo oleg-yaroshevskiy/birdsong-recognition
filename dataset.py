@@ -23,7 +23,6 @@ import torch
 import math
 
 def get_train_augmentations(args):
-    SpectToImage = SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
     train_audio_augmentation = [
         IntRandomAudio(seconds=args.max_duration, always_apply=True)
     ]
@@ -41,13 +40,12 @@ def get_train_augmentations(args):
         train_audio_augmentation.append(AddBackground(p=args.augm_bg_prob))
 
     if args.augm_low_pass > 0:
-        train_audio_augmentation.append(LowFrequencyMask(p=0.75))
+        train_audio_augmentation.append(LowFrequencyMask(p=args.augm_low_pass))
 
     return albumentations.Compose(train_audio_augmentation)
 
 
 def get_valid_augmentations(args):
-    SpectToImage = SpectToImage1c if "cnn14_att" in args.model else SpectToImage3c
     return albumentations.Compose(
         [
             IntRandomAudio(seconds=args.max_duration, always_apply=True),

@@ -96,6 +96,7 @@ for fold, (t_idx, v_idx) in enumerate(
     best_test_2_05 = 0
     ol_test_1 = RankOrderedList()
     ol_test_2 = RankOrderedList()
+    ol_test_2_05 = RankOrderedList()
 
     for epoch in range(args.epochs):
         train_loss = train_fn(
@@ -142,6 +143,8 @@ for fold, (t_idx, v_idx) in enumerate(
             torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2_05.pth")
             wandb.save(f"{model_directory}/fold_{fold}_test_2_05.pth")
             best_test_2_05 = test_f1_2_05
+
+        ol_test_2_05.insert(test_f1_2_05, lambda rank: torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2_05_r{rank}.pth"))
 
         scheduler.step(valid_acc)
 

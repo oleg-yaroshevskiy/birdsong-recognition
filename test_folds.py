@@ -47,7 +47,7 @@ def swa(checkpoints):
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
 
-experiment = "b4_128_light_pshift_bg_0.5"
+experiment = "b4_128_light_pshift_bg"
 
 for checkpoint_set in ["_test_1", "_test_2", "_test_2_05"]:
     models = []
