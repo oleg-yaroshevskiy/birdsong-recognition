@@ -12,7 +12,7 @@ parser.add_argument("--num_workers", type=int, default=16)
 parser.add_argument("--model", type=str, default="b4")
 parser.add_argument("--name", type=str, default="")
 parser.add_argument("--batch_size", type=int, default=32)
-parser.add_argument("--epochs", type=int, default=75)
+parser.add_argument("--epochs", type=int, default=100)
 
 parser.add_argument("--max_duration", type=int, default=5)
 parser.add_argument("--warmup", type=int, default=500)  # < 1 epoch
