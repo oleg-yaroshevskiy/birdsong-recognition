@@ -41,8 +41,8 @@ parser.add_argument("--augm_bg_prob", type=float, default=0.)
 parser.add_argument("--augm_vol_prob", type=float, default=1.0)
 parser.add_argument("--augm_noise_prob", type=float, default=0.33)
 parser.add_argument("--augm_spec_prob", type=float, default=0.33)
-parser.add_argument("--augm_low_pass", type=float, default=0.33)
-parser.add_argument("--pitch_shift", type=float, default=0.75)
+parser.add_argument("--augm_low_pass", type=float, default=0.75)
+parser.add_argument("--pitch_shift", type=float, default=0.33)
 
 args = parser.parse_args()
 
