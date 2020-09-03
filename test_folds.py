@@ -64,7 +64,7 @@ for checkpoint_set in ["_test_1", "_test_2", "_test_2_05"]:
     print()
     print()
 
-for checkpoint_set in ["_test_1", "_test_2"]:
+for checkpoint_set in ["_test_1", "_test_2", "_test_2_05"]:
     models = []
     for fold in range(args.folds):
         try:
