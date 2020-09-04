@@ -444,6 +444,17 @@ class GenEfficientNet(nn.Module):
         )
         return nn.Sequential(*layers)
 
+    def _add_frequency_encoding(self, x):
+        n, d, h, w = x.size()
+        #print(x.size())
+
+        vertical = torch.linspace(-1, 1, h, device=x.device).view(1, 1, -1, 1)
+        vertical = vertical.repeat(n, 1, 1, w)
+
+        x = torch.cat([x, x, vertical], dim=1)
+
+        return x
+
     def forward(self, x):
         x = self.logmel(x)
 
@@ -454,7 +465,7 @@ class GenEfficientNet(nn.Module):
                 x, self.spec_augm(x))
 
         x = x.transpose(2, 3)
-        x = torch.cat([x, x, x], dim=1)
+        x = self._add_frequency_encoding(x)
 
         x = self.features(x)
 
