@@ -29,6 +29,7 @@ parser.add_argument("--batch_accumulation", type=int, default=2)
 parser.add_argument("--nmels", type=int, default=128)
 parser.add_argument("--num_classes", type=int, default=264)
 
+parser.add_argument("--crop_threshold", type=int, default=None)
 parser.add_argument("--smoothing", type=float, default=0.2)
 parser.add_argument("--mixup", type=float, default=0.0)
 parser.add_argument("--secondary", type=str, default="True")

@@ -24,23 +24,13 @@ import math
 
 def get_train_augmentations(args):
     train_audio_augmentation = [
-        IntRandomAudio(seconds=args.max_duration, always_apply=True)
+        IntRandomAudio(seconds=args.max_duration, threshold=args.crop_threshold, always_apply=True),
+        VolumeOff(p=args.augm_vol_prob),
+        PitchShift(p=args.pitch_shift),
+        PinksNoiseInjection(p=args.augm_noise_prob),
+        AddBackground(p=args.augm_bg_prob),
+        LowFrequencyMask(p=args.augm_low_pass)
     ]
-
-    if args.augm_vol_prob > 0:
-        train_audio_augmentation.append(VolumeOff(p=args.augm_vol_prob))
-
-    if args.pitch_shift > 0:
-        train_audio_augmentation.append(PitchShift(p=args.pitch_shift))
-
-    if args.augm_noise_prob > 0:
-        train_audio_augmentation.append(PinksNoiseInjection(p=args.augm_noise_prob))
-
-    if args.augm_bg_prob > 0:
-        train_audio_augmentation.append(AddBackground(p=args.augm_bg_prob))
-
-    if args.augm_low_pass > 0:
-        train_audio_augmentation.append(LowFrequencyMask(p=args.augm_low_pass))
 
     return albumentations.Compose(train_audio_augmentation)
 

@@ -238,9 +238,10 @@ class TimeStretch(AudioTransform):
 
 
 class IntRandomAudio(AudioTransform):
-    def __init__(self, seconds=5, always_apply=False, p=0.5):
+    def __init__(self, seconds=5, threshold=None, always_apply=False, p=0.5):
         super(IntRandomAudio, self).__init__(always_apply, p)
 
+        self.threshold = threshold
         self.seconds = seconds
 
     def apply(self, data, **params):
@@ -255,6 +256,8 @@ class IntRandomAudio(AudioTransform):
         step = sr // 10
         frames = len(sound) // step
         probs = np.abs(sound)[: frames * step].reshape(-1, step).max(axis=-1)
+        if self.threshold is not None:
+            probs = (probs > np.percentile(probs, self.threshold)).astype(float)
         probs /= probs.sum()
 
         idx = np.random.choice(range(frames), 1, p=probs)[0] * step + np.random.randint(
