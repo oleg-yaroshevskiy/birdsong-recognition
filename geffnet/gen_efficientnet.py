@@ -412,6 +412,8 @@ class GenEfficientNet(nn.Module):
         )
         self.spec_augm_prob = config.augm_spec_prob
 
+        self.head_dropout = nn.Dropout(0.5)
+
         for n, m in self.named_modules():
             if weight_init == "goog":
                 initialize_weight_goog(m, n)
@@ -474,7 +476,13 @@ class GenEfficientNet(nn.Module):
             x = x.flatten(1)
             if self.drop_rate > 0.:
                 x = F.dropout(x, p=self.drop_rate, training=self.training)
-            return self.classifier(x)
+            return torch.mean(
+                torch.stack([
+                    self.classifier(self.head_dropout(x)) for _ in range(5)
+                ], dim=0), 
+                dim=0
+            ) 
+            #return self.classifier(x)
         else:
             x = x.transpose(2, 3)
             x = torch.mean(x, dim=3)
