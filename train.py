@@ -92,10 +92,12 @@ for fold, (t_idx, v_idx) in enumerate(
 
     best_acc = 0
     best_test_1 = 0
+    best_test_1_05 = 0
     best_test_2 = 0
     best_test_2_05 = 0
     ol_test_1 = RankOrderedList()
     ol_test_2 = RankOrderedList()
+    ol_test_1_05 = RankOrderedList()
     ol_test_2_05 = RankOrderedList()
 
     for epoch in range(args.epochs):
@@ -112,7 +114,7 @@ for fold, (t_idx, v_idx) in enumerate(
         valid_loss, valid_acc = valid_fn(
             valid_loader, model, loss_fn, device, epoch, args
         )
-        test_f1_1, _ = test_fn(model, loss_fn, device, test_samples_1, epoch, "", args)
+        test_f1_1, test_f1_1_05 = test_fn(model, loss_fn, device, test_samples_1, epoch, "", args)
         test_f1_2, test_f1_2_05 = test_fn(
             model, loss_fn, device, test_samples_2, epoch, " extended", args
         )
@@ -129,8 +131,15 @@ for fold, (t_idx, v_idx) in enumerate(
             torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_1.pth")
             wandb.save(f"{model_directory}/fold_{fold}_test_1.pth")
             best_test_1 = test_f1_1
-        
+
         ol_test_1.insert(test_f1_1, lambda rank: torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_1_r{rank}.pth"))
+
+        if test_f1_1_05 > best_test_1_05:
+            torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_1_05.pth")
+            wandb.save(f"{model_directory}/fold_{fold}_test_1_05.pth")
+            best_test_1_05 = test_f1_1_05
+        
+        ol_test_1_05.insert(test_f1_1_05, lambda rank: torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_1_05_r{rank}.pth"))
 
         if test_f1_2 > best_test_2:
             torch.save(model.state_dict(), f"{model_directory}/fold_{fold}_test_2.pth")
