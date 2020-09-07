@@ -37,14 +37,15 @@ def onehot(targets, targets_secondary, num_classes, smoothing=0.0):
 
 def mixup(data, targets, prob=0.66):
     half = data.size(0) // 2
+    indices = torch.randperm(data.size(0))
 
     if np.random.rand() < prob:
         lam = np.random.rand()
-        data = lam * data[:half] + (1 - lam) * data[half:]
-        targets = torch.max(targets[:half], targets[half:])
+        data = lam * data + (1 - lam) * data[indices]
+        targets = torch.max(targets, targets[indices])
     else:
-        targets = targets[:half]
-        data = data[:half]
+        targets = targets#[:half]
+        data = data#[:half]
 
     return data, targets
 
