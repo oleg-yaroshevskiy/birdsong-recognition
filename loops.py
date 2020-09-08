@@ -40,8 +40,7 @@ def mixup(data, targets, prob=0.66):
     indices = torch.randperm(data.size(0))
 
     if np.random.rand() < prob:
-        lam = np.random.rand()
-        data = lam * data + (1 - lam) * data[indices]
+        data = data +  data[indices]
         targets = torch.max(targets, targets[indices])
     else:
         targets = targets#[:half]

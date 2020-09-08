@@ -389,7 +389,7 @@ class GenEfficientNet(nn.Module):
         )
         self.blocks = nn.Sequential(*builder(in_chs, block_args))
         in_chs = builder.in_chs
-
+        self.bn0 = nn.BatchNorm2d(3)
         self.conv_head = select_conv2d(in_chs, num_features, 1, padding=pad_type)
         self.bn2 = norm_layer(num_features, **norm_kwargs)
         self.act2 = act_layer(inplace=True)
@@ -406,7 +406,7 @@ class GenEfficientNet(nn.Module):
         self.logmel = LogMel(config.melspectrogram_parameters)
         self.spec_augm = torchlibrosa.augmentation.SpecAugmentation(
             time_drop_width=64,
-            time_stripes_num=2 * (config.max_duration // 5),
+            time_stripes_num=0,
             freq_drop_width=config.nmels // 16,
             freq_stripes_num=2,
         )
@@ -448,7 +448,6 @@ class GenEfficientNet(nn.Module):
 
     def _add_frequency_encoding(self, x):
         n, d, h, w = x.size()
-        #print(x.size())
 
         vertical = torch.linspace(-1, 1, h, device=x.device).view(1, 1, -1, 1)
         vertical = vertical.repeat(n, 1, 1, w)
@@ -468,6 +467,7 @@ class GenEfficientNet(nn.Module):
 
         x = x.transpose(2, 3)
         x = self._add_frequency_encoding(x)
+        x = self.bn0(x)
 
         x = self.features(x)
 
