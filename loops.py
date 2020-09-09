@@ -276,9 +276,15 @@ def test_folds_fn(models, loss_fn, device, samples, key, args):
 
         scores_by_t[round(t, 2)] = round(score, 4)
 
+    scores_around = []
+    for t in np.linspace(best_threshold - 0.1, best_threshold + 0.1, 21):
+        score = get_f1_micro_nocall(outputs, samples["targets"], t)
+        scores_around.append(score)
+
     print(f"test{key} f1 scores:", scores_by_t)
     print(f"test{key} f1 t=0.5:", scores_by_t[0.5])
     print(f"test{key}", round(best_score, 4),  "best: t=", round(best_threshold, 2))
+    print(f"test{key}", round(max(scores_around) - min(scores_around), 3))
     print()
 
     return best_score
