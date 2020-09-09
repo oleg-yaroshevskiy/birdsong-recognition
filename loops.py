@@ -39,12 +39,13 @@ def mixup(data, targets, prob=0.66):
     half = data.size(0) // 2
     indices = torch.randperm(data.size(0))
 
-    if np.random.rand() < prob:
-        data = (data +  data[indices]) / 2
-        targets = torch.max(targets, targets[indices])
-    else:
-        targets = targets#[:half]
-        data = data#[:half]
+    #if np.random.rand() < prob:
+    mask = (torch.rand(data.size(0)) < prob).unsqueeze(1).cuda().float()
+    data = (data +  data[indices] * mask) / (1 + mask)
+    targets = torch.max(targets, targets[indices] * mask)
+    # else:
+    #     targets = targets#[:half]
+    #     data = data#[:half]
 
     return data, targets
 
