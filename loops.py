@@ -27,7 +27,7 @@ def onehot(targets, targets_secondary, num_classes, smoothing=0.0):
     if targets_secondary is not None:
         one_hot[targets_secondary.bool()] = 1 - smoothing
 
-    one_hot[torch.arange(size), targets] = 1 - smoothing
+    one_hot[torch.arange(size), targets] = 1
     
     if num_classes == 265:
         one_hot[:, -1] = smoothing / (num_classes - 1)
@@ -40,7 +40,7 @@ def mixup(data, targets, prob=0.66):
     indices = torch.randperm(data.size(0))
 
     if np.random.rand() < prob:
-        data = data +  data[indices]
+        data = (data +  data[indices]) / 2
         targets = torch.max(targets, targets[indices])
     else:
         targets = targets#[:half]
