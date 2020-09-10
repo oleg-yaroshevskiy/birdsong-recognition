@@ -149,14 +149,14 @@ class NoiseInjection(AudioTransform):
         self.noise_levels = noise_levels
 
     def apply(self, data, **params):
-        sound, sr = data
+        sound, crop_index, sr = data
         noise_level = np.random.uniform(*self.noise_levels)
         noise = np.random.randn(len(sound))
         augmented_sound = sound + noise_level * noise
         # Cast back to same data type
         augmented_sound = augmented_sound.astype(type(sound[0]))
 
-        return augmented_sound, sr
+        return augmented_sound, crop_index, sr
 
 
 class PinksNoiseInjection(AudioTransform):
@@ -169,7 +169,7 @@ class PinksNoiseInjection(AudioTransform):
         self.brown_noise = powerlaw_psd_gaussian(2, 360 * 32000)
 
     def apply(self, data, **params):
-        sound, sr = data
+        sound, crop_index, sr = data
 
         idx = np.random.randint(0, 360 * 32000 - len(sound))
         noise_level = np.random.rand()
@@ -183,7 +183,7 @@ class PinksNoiseInjection(AudioTransform):
         # Cast back to same data type
         augmented_sound = augmented_sound.astype(type(sound[0]))
 
-        return augmented_sound, sr
+        return augmented_sound, crop_index, sr
 
 
 class ShiftingTime(AudioTransform):
@@ -216,12 +216,12 @@ class PitchShift(AudioTransform):
         super(PitchShift, self).__init__(always_apply, p)
 
     def apply(self, data, **params):
-        sound, sr = data
+        sound, crop_index, sr = data
 
         n_steps = np.random.randint(-6, 6)
         augmented_sound = librosa.effects.pitch_shift(sound, sr, n_steps)
 
-        return augmented_sound, sr
+        return augmented_sound, crop_index, sr
 
 
 class TimeStretch(AudioTransform):
@@ -251,7 +251,7 @@ class IntRandomAudio(AudioTransform):
         if len(sound) < half * 2:
             padding = half * 2 - len(sound)
             trim_sound = np.pad(sound, (0, padding), "constant")
-            return trim_sound, sr
+            return trim_sound, 0, sr
 
         step = sr // 10
         frames = len(sound) // step
@@ -265,13 +265,13 @@ class IntRandomAudio(AudioTransform):
         )
 
         if idx < half:
-            return sound[: half * 2], sr
+            return sound[: half * 2], 0, sr
 
         elif idx > len(sound) - half:
-            return sound[-half * 2 :], sr
+            return sound[-half * 2 :], len(sound) - half * 2, sr
 
         else:
-            return sound[idx - half : idx + half], sr
+            return sound[idx - half : idx + half], idx - half, sr
 
 
 class RandomAudio(AudioTransform):
@@ -305,14 +305,14 @@ class AddBackground(AudioTransform):
         self.background_audios_duration = len(self.background_audios)
 
     def apply(self, data, **params):
-        sound, sr = data
+        sound, crop_index, sr = data
         frame = np.random.randint(0, self.background_audios_duration - len(sound))
         bg = self.background_audios[frame : frame + len(sound)]
         noise_level = np.random.rand()
 
         sound = sound + bg * noise_level
 
-        return sound, sr
+        return sound, crop_index, sr
 
 
 class VolumeOff(AudioTransform):
@@ -320,11 +320,11 @@ class VolumeOff(AudioTransform):
         super(VolumeOff, self).__init__(always_apply, p)
 
     def apply(self, data, **params):
-        sound, sr = data
+        sound, crop_index, sr = data
         alpha = np.random.rand()
         sound = alpha * sound
 
-        return sound, sr
+        return sound, crop_index, sr
 
 
 class MelSpectrogram(AudioTransform):
@@ -451,9 +451,9 @@ class LowFrequencyMask(AudioTransform):
         self.min_cutoff = min_cutoff
 
     def apply(self, data, **params):
-        audio, sr = data
+        audio, crop_index, sr = data
 
         cutoff_value = np.random.randint(low=self.min_cutoff, high=self.max_cutoff)
         audio = butter_lowpass_filter(audio, cutoff=cutoff_value, fs=sr)
 
-        return audio, sr
+        return audio, crop_index, sr
