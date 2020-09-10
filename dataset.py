@@ -84,26 +84,26 @@ class BirdDataset:
         filename = self.filename[item]
         ebird_code = self.ebird_code[item]
         ebird_label = self.ebird_label[item]
-        ebird_label_secondary = np.zeros(self.args.num_classes)
-        # ebird_label_secondary.scatter_(
-        #     0, torch.Tensor(self.ebird_label_secondary[item]).long(), 1
-        # )
+        ebird_label_secondary = torch.zeros(self.args.num_classes)
+        ebird_label_secondary.scatter_(
+            0, torch.Tensor(self.ebird_label_secondary[item]).long(), 1
+        )
         folder = self.folder[item]
 
         data = self.load_npy(f"{args.ROOT_PATH}/{folder}/{ebird_code}/{filename}")
-        spect, crop_index, _ = self.aug(data=data)["data"]
+        spect, _ = self.aug(data=data)["data"]
 
-        if filename in self.secondary:
-            for i, idx in enumerate(self.ebird_label_secondary[item]):
-                frame = crop_index // 512
-                ebird_label_secondary[idx] = self.secondary[filename][i][frame:frame+312].max()
+        # if filename in self.secondary:
+        #     for i, idx in enumerate(self.ebird_label_secondary[item]):
+        #         frame = crop_index // 512
+        #         ebird_label_secondary[idx] = self.secondary[filename][i][frame:frame+312].max()
 
         target = ebird_label
 
         return {
             "spect": torch.tensor(spect, dtype=torch.float),
             "target": torch.tensor(target, dtype=torch.long),
-            "target_secondary": torch.from_numpy(ebird_label_secondary).float(),
+            "target_secondary": ebird_label_secondary.long(),
         }
 
 

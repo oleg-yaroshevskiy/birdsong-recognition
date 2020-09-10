@@ -47,35 +47,64 @@ def swa(checkpoints):
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
 
-experiment = "b4_samsung"
+experiment1 = "b4_128_xeno_pshift_bg"
+experiment2 = "cnn14_att_10sec_dirty"
+experiment3 = "b3_128_saint_mix"
+
+# for checkpoint_set in ["_test_1", "_test_2", "_test_1_05", "_test_2_05"]:
+#     models = []
+#     for fold in range(args.folds):
+#         args.model = "b4"
+#         args.fold = fold
+#         model, loss_fn = get_model_loss(args, pretrained=False)
+#         model.load_state_dict(torch.load(f"../models/{experiment1}/fold_{fold}{checkpoint_set}.pth"))
+#         models.append(model)
+#     for fold in range(args.folds):
+#         args.model = "cnn14_att"
+#         args.fold = fold
+#         model, loss_fn = get_model_loss(args, pretrained=False)
+#         model.load_state_dict(torch.load(f"../models/{experiment2}/fold_{fold}{checkpoint_set}.pth"))
+#         models.append(model)
+#     for fold in range(args.folds):
+#         args.model = "b3"
+#         args.fold = fold
+#         model, loss_fn = get_model_loss(args, pretrained=False)
+#         model.load_state_dict(torch.load(f"../models/{experiment3}/fold_{fold}{checkpoint_set}.pth"))
+#         models.append(model)
+
+#     print("Checkpoint set:", checkpoint_set)
+#     test_f1_1 = test_folds_fn(models, loss_fn, device, test_samples_1, "", args)
+#     test_f1_2 = test_folds_fn(
+#         models, loss_fn, device, test_samples_2, " extended", args
+#     )
+#     print()
+#     print()
 
 for checkpoint_set in ["_test_1", "_test_2", "_test_1_05", "_test_2_05"]:
     models = []
     for fold in range(args.folds):
-        args.fold = fold
+        args.model = "b4"
+        args.fold = 0
         model, loss_fn = get_model_loss(args, pretrained=False)
-        model.load_state_dict(torch.load(f"../models/{experiment}/fold_{fold}{checkpoint_set}.pth"))
+        state = swa([f"../models/{experiment1}/fold_{fold}{checkpoint_set}_r{rank}.pth" for rank in range(3)])
+        model.load_state_dict(state)
         models.append(model)
 
-    print("Checkpoint set:", checkpoint_set)
-    test_f1_1 = test_folds_fn(models, loss_fn, device, test_samples_1, "", args)
-    test_f1_2 = test_folds_fn(
-        models, loss_fn, device, test_samples_2, " extended", args
-    )
-    print()
-    print()
-
-for checkpoint_set in ["_test_1", "_test_2", "_test_1_05", "_test_2_05"]:
-    models = []
     for fold in range(args.folds):
-        try:
-            args.fold = fold
-            model, loss_fn = get_model_loss(args, pretrained=False)
-            state = swa([f"../models/{experiment}/fold_{fold}{checkpoint_set}_r{rank}.pth" for rank in range(3)])
-            model.load_state_dict(state)
-            models.append(model)
-        except:
-            print("sorry cant find for fold", fold)
+        args.model = "cnn14_att"
+        args.fold = 0
+        model, loss_fn = get_model_loss(args, pretrained=False)
+        state = swa([f"../models/{experiment2}/fold_{fold}{checkpoint_set}_r{rank}.pth" for rank in range(3)])
+        model.load_state_dict(state)
+        models.append(model)
+
+    for fold in range(args.folds):
+        args.model = "b3"
+        args.fold = fold
+        model, loss_fn = get_model_loss(args, pretrained=False)
+        state = swa([f"../models/{experiment3}/fold_{fold}{checkpoint_set}_r{rank}.pth" for rank in range(3)])
+        model.load_state_dict(state)
+        models.append(model)
 
     print("Checkpoint set: SWA", checkpoint_set)
     test_f1_1 = test_folds_fn(models, loss_fn, device, test_samples_1, "", args)

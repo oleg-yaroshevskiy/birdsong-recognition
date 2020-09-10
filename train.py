@@ -45,6 +45,7 @@ if args.add_xeno:
     aux_train["ebird_label_secondary"] = aux_train.secondary_labels.apply(
         lambda x: train_le.transform([mapping[xx] for xx in eval(x) if xx in mapping])
     )
+    train = pd.concat([train, aux_train], axis=0).reset_index()
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
 
@@ -63,8 +64,6 @@ for fold, (t_idx, v_idx) in enumerate(
     # DataLoaders
     train_df = train.loc[t_idx]
     valid_df = train.loc[v_idx]
-    if args.add_xeno:
-        train_df = pd.concat([train_df, aux_train], axis=0)
 
     train_dataset = BirdDataset(df=train_df, args=args)
     valid_dataset = BirdDataset(df=valid_df, args=args, valid=True)
