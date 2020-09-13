@@ -49,7 +49,7 @@ if args.add_xeno:
 
 test_samples_1, test_samples_2 = get_test_samples(train_le, args)
 
-kfold = StratifiedKFold(n_splits=5)
+kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=28)
 for fold, (t_idx, v_idx) in enumerate(
     kfold.split(train.filename.values, train.ebird_code.values)
 ):
